@@ -26,14 +26,14 @@
 
 Support for onward deposit of software artifacts to Software Heritage.
 
-Development of this Invenio module is being [funded through a
-subgrant](https://www.softwareheritage.org/2020/10/27/connecting-scholarly-repositories-with-the-software-heritage-archive/)
-from [Software Heritage](https://github.com/softwareheritage), as a result of a
-grant given by the [Alfred P. Sloan Foundation](https://sloan.org/) to increase
+Development of this Invenio module is being `funded through a subgrant
+<https://www.softwareheritage.org/2020/10/27/connecting-scholarly-repositories-with-the-software-heritage-archive/>`_
+from `Software Heritage <https://github.com/softwareheritage>`_, as a result of a
+grant given by the `Alfred P. Sloan Foundation <https://sloan.org/>`_ to increase
 the coverage of the Software Heritage archive.
 
-The development plan and scope is available [as a Google
-Doc](https://docs.google.com/document/d/1z0ItQa8e2bFAha_9NtEG3hd1ZJCV6T4Zi4wrXWRdTfo).
+The development plan and scope is available `as a Google Doc
+<https://docs.google.com/document/d/1z0ItQa8e2bFAha_9NtEG3hd1ZJCV6T4Zi4wrXWRdTfo>`_.
 
 Further documentation will be available on
 https://invenio-swh.readthedocs.io/
