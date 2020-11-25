@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #
+# Copyright (C) 2020 CERN
 # Copyright (C) 2020 Cottage Labs LLP.
 #
 # invenio-swh is free software; you can redistribute it and/or modify it
@@ -46,8 +47,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'invenio-swh'
-copyright = u'2020, Cottage Labs LLP'
-author = u'Cottage Labs LLP'
+copyright = u'2020, CERN, Cottage Labs LLP.'
+author = u'Cottage Labs LLP.'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

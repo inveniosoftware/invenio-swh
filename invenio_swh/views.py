@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #
+# Copyright (C) 2020 CERN
 # Copyright (C) 2020 Cottage Labs LLP.
 #
 # invenio-swh is free software; you can redistribute it and/or modify it
