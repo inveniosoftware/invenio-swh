@@ -24,9 +24,10 @@
 .. image:: https://img.shields.io/github/license/inveniosoftware/invenio-swh.svg
         :target: https://github.com/inveniosoftware/invenio-swh/blob/master/LICENSE
 
-Support for onward deposit of software artifacts to Software Heritage
+Support for onward deposit of software artifacts to Software Heritage.
 
-TODO: Please provide feature overview of module
+The development plan and scope is available [as a Google
+Doc](https://docs.google.com/document/d/1z0ItQa8e2bFAha_9NtEG3hd1ZJCV6T4Zi4wrXWRdTfo).
 
-Further documentation is available on
+Further documentation will be available on
 https://invenio-swh.readthedocs.io/
