@@ -5,7 +5,7 @@ from invenio_drafts_resources.records import Draft
 from invenio_records import Record
 from lxml import etree
 
-from invenio_rdm_records.records import BibliographicRecord
+from invenio_rdm_records.records import RDMDraft
 from invenio_records_resources.services.records.components import ServiceComponent
 from invenio_swh import InvenioSWH
 from invenio_swh.exceptions import (
@@ -49,7 +49,7 @@ class InvenioSWHComponent(ServiceComponent):
         # self.set_extension_data(record, self.internal_ext_key, None)
         pass
 
-    def update_draft(self, identity, *, data, record: BibliographicRecord):
+    def update_draft(self, identity, *, data, record: RDMDraft):
         logger.debug("Record update draft")
         self.sync_to_swh(data, record, in_progress=True)
 
