@@ -55,7 +55,7 @@ class SWHMetadata:
                 else None
             )
             # TODO: The schema says this should be creator['person_or_org']['name']
-            entry.add_author(name=creator["name"], uri=orcid_uri)
+            entry.add_author(name=creator['person_or_org']["name"], uri=orcid_uri)
 
     def add_codemeta_metadata(self, entry: sword2.Entry, data: dict) -> None:
         for date in data["metadata"].get("dates", []):
