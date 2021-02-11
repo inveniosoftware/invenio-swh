@@ -59,6 +59,7 @@ setup(
     version=version,
     description=__doc__,
     long_description=readme + '\n\n' + history,
+    long_description_content_type='text/x-rst',
     keywords='invenio TODO',
     license='MIT',
     author='Cottage Labs LLP',
