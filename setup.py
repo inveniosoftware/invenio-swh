@@ -16,7 +16,11 @@ readme = open('README.rst').read()
 history = open('CHANGES.rst').read()
 
 tests_require = [
-    'pytest-invenio>=1.4.0',
+    "pytest-invenio>=1.4.0",
+    "invenio-db[postgresql,versioning]",
+    "invenio-search[elasticsearch7]",
+    "pytest-invenio>=1.4.0",
+    "xmldiff",
 ]
 
 extras_require = {
@@ -36,6 +40,9 @@ setup_requires = [
 
 install_requires = [
     'invenio-i18n>=1.2.0',
+    "invenio-rdm-records",
+    "lxml",
+    "sword2",
 ]
 
 packages = find_packages()
