@@ -73,6 +73,9 @@ setup(
         'invenio_base.apps': [
             'invenio_swh = invenio_swh:InvenioSWH',
         ],
+        'invenio_base.api_apps': [
+            'invenio_swh = invenio_swh:InvenioSWH',
+        ],
         'invenio_base.blueprints': [
             'invenio_swh = invenio_swh.views:blueprint',
         ],
