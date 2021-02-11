@@ -11,7 +11,11 @@
 See https://pytest-invenio.readthedocs.io/ for documentation on which test
 fixtures are available.
 """
+import os
 
+import json
+
+import pkg_resources
 import shutil
 import tempfile
 
@@ -43,3 +47,11 @@ def create_app(instance_path):
         app.register_blueprint(blueprint)
         return app
     return factory
+
+
+@pytest.fixture()
+def example_record():
+    with open(
+        os.path.join(os.path.dirname(__file__), "fixtures", "example-record.json")
+    ) as f:
+        return json.load(f)

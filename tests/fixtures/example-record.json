@@ -1,0 +1,34 @@
+{
+  "metadata": {
+    "resource_type": {
+      "type": "software"
+    },
+    "title": "Invenio",
+    "creators": [
+      {
+        "name": "CERN"
+      },
+      {
+        "name": "other contributors"
+      }
+    ],
+    "dates": [
+      {
+        "date": "2019-01-01",
+        "type": "created"
+      },
+      {
+        "date": "2021-01-25",
+        "type": "updated"
+      }
+    ],
+    "rights": [
+      {
+        "rights": "MIT License",
+        "scheme": "spdx",
+        "identifier": "MIT",
+        "url": "https://opensource.org/licenses/MIT"
+      }
+    ]
+  }
+}
