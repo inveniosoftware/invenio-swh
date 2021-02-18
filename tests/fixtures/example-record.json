@@ -6,10 +6,16 @@
     "title": "Invenio",
     "creators": [
       {
-        "name": "CERN"
+        "person_or_org": {
+          "name": "CERN",
+          "type": "organization"
+        }
       },
       {
-        "name": "other contributors"
+        "person_or_org": {
+          "name": "other contributors",
+          "type": "organization"
+        }
       }
     ],
     "dates": [
@@ -24,10 +30,10 @@
     ],
     "rights": [
       {
-        "rights": "MIT License",
+        "title": "MIT License",
         "scheme": "spdx",
         "identifier": "MIT",
-        "url": "https://opensource.org/licenses/MIT"
+        "link": "https://opensource.org/licenses/MIT"
       }
     ]
   }

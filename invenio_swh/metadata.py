@@ -70,8 +70,8 @@ class SWHMetadata:
         for rights in data["metadata"].get("rights", []):
             entry.entry.append(
                 CodeMeta.license(
-                    CodeMeta.name(rights["rights"]),
-                    CodeMeta.url(rights["url"]),
+                    CodeMeta.name(rights["title"]),
+                    CodeMeta.url(rights["link"]),
                 )
             )
 

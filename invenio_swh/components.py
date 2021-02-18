@@ -7,7 +7,7 @@ from lxml import etree
 
 from invenio_rdm_records.records import RDMDraft
 from invenio_records_resources.services.records.components import ServiceComponent
-from invenio_swh import InvenioSWH
+from invenio_swh import InvenioSWH, tasks
 from invenio_swh.exceptions import (
     InvenioSWHException,
     MissingMandatoryMetadataException,
@@ -16,8 +16,6 @@ from sword2 import Deposit_Receipt
 
 logger = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.DEBUG)
-
 
 class InvenioSWHComponent(ServiceComponent):
     """A service component providing SWH integration with records."""
@@ -25,7 +23,7 @@ class InvenioSWHComponent(ServiceComponent):
     user_ext_key = "swh"
     internal_ext_key = "swh-internal"
 
-    def __init__(self, service, *, extension_name="invenio-swh"):
+    def __init__(self, service, *, extension_name=InvenioSWH.extension_name):
         super().__init__(service)
         self.extension_name = extension_name
 
@@ -42,6 +40,9 @@ class InvenioSWHComponent(ServiceComponent):
         internal_data = self.get_extension_data(record, self.internal_ext_key)
         if internal_data.get("se-iri"):
             client = self.extension.sword_client
+
+            cls_name = f'{type(record).__module__}:{type(record).__qualname__}'
+            tasks.upload_files(cls_name=cls_name, id=record.pid.pid_value)
             client.complete_deposit(se_iri=internal_data["se-iri"])
 
     def read(self, identity, *, record):

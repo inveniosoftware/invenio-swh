@@ -1,9 +1,8 @@
 import pytest
-import xmldiff
+import xmldiff.main
 from lxml import etree
 
-from invenio_swh import InvenioSWH
-from invenio_swh import exceptions
+from invenio_swh import InvenioSWH, exceptions
 
 
 def test_not_software_metadata(example_record):
@@ -39,8 +38,10 @@ def test_metadata_for_example_record(example_record):
                xmlns:atom="http://www.w3.org/2005/Atom"
                xmlns:codemeta="https://doi.org/10.5063/SCHEMA/CODEMETA-2.0"
                xmlns:swh="https://www.softwareheritage.org/schema/2018/deposit">
-            <generator uri="http://bitbucket.org/beno/python-sword2" version="0.1"/>
-            {etree.tounicode(metadata_entry.entry.xpath('atom:updated', namespaces=metadata_entry.nsmap)[0])}
+            <generator uri="http://bitbucket.org/beno/python-sword2"
+                version="0.1"/>
+            {etree.tounicode(metadata_entry.entry.xpath(
+                'atom:updated', namespaces=metadata_entry.nsmap)[0])}
             <atom:title>Invenio</atom:title>
             <atom:author>
                 <atom:name>CERN</atom:name>

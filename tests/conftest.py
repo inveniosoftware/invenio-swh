@@ -11,13 +11,8 @@
 See https://pytest-invenio.readthedocs.io/ for documentation on which test
 fixtures are available.
 """
-import os
-
 import json
-
-import pkg_resources
-import shutil
-import tempfile
+import os
 
 import pytest
 from flask import Flask
@@ -51,7 +46,10 @@ def create_app(instance_path):
 
 @pytest.fixture()
 def example_record():
+    """An example record as a JSON-like Python structure."""
     with open(
-        os.path.join(os.path.dirname(__file__), "fixtures", "example-record.json")
+        os.path.join(
+            os.path.dirname(__file__), "fixtures", "example-record.json"
+        )
     ) as f:
         return json.load(f)
