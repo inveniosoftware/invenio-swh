@@ -91,7 +91,10 @@ def example_record():
 class RDMWithSWHRecordServiceConfig(RDMRecordServiceConfig):
     """A record service config with our SWH component."""
 
-    indexer_cls = lambda *args, **kwargs: None
+    @classmethod
+    def indexer_cls(cls, *args, **kwargs):
+        """Disable indexing by not returning an indexer class."""
+        return None
 
     components = [
         *RDMRecordServiceConfig.components,
