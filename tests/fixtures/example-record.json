@@ -8,13 +8,13 @@
       {
         "person_or_org": {
           "name": "CERN",
-          "type": "organization"
+          "type": "organizational"
         }
       },
       {
         "person_or_org": {
           "name": "other contributors",
-          "type": "organization"
+          "type": "organizational"
         }
       }
     ],
@@ -31,8 +31,6 @@
     "rights": [
       {
         "title": "MIT License",
-        "scheme": "spdx",
-        "identifier": "MIT",
         "link": "https://opensource.org/licenses/MIT"
       }
     ]
