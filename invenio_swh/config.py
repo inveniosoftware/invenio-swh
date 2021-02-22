@@ -9,14 +9,14 @@
 """Support for onward deposit of software artifacts to Software Heritage"""
 
 
-INVENIO_SWH_BASE_TEMPLATE = 'invenio_swh/base.html'
+INVENIO_SWH_BASE_TEMPLATE = "invenio_swh/base.html"
 """Default base template for the demo page."""
 
 INVENIO_SWH_SERVICES = {
-    'swh': {
-        'NAME': "Software Heritage",
-        'SERVICE_DOCUMENT': 'https://deposit.softwareheritage.org/1/servicedocument/',
-        'USERNAME': None,
-        'PASSWORD': None,
+    "swh": {
+        "NAME": "Software Heritage",
+        "SERVICE_DOCUMENT": "https://deposit.softwareheritage.org/1/servicedocument/",
+        "USERNAME": None,
+        "PASSWORD": None,
     }
 }

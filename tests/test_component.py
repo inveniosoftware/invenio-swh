@@ -16,11 +16,17 @@ def test_create_draft_non_software(
     database,
     location,
 ):
-    with unittest.mock.patch.object(InvenioSWH, 'sword_client') as sword_client:
-        record_item = rdm_with_swh_record_service.create(identity_simple, {}, None)
+    with unittest.mock.patch.object(
+        InvenioSWH, "sword_client"
+    ) as sword_client:
+        record_item = rdm_with_swh_record_service.create(
+            identity_simple, {}, None
+        )
         assert not sword_client.create.called
         with pytest.raises(KeyError):
-            _ = record_item._record['ext'][InvenioSWHComponent.internal_ext_key]
+            _ = record_item._record["ext"][
+                InvenioSWHComponent.internal_ext_key
+            ]
 
 
 def test_create_draft_software(
@@ -31,12 +37,20 @@ def test_create_draft_software(
     database,
     location,
 ):
-    with unittest.mock.patch.object(InvenioSWH, 'sword_client') as sword_client:
-        sword_client.create.return_value.edit = 'http://sword.invalid/edit-iri'
-        sword_client.create.return_value.edit_media = 'http://sword.invalid/edit-media-iri'
-        sword_client.create.return_value.se_iri = 'http://sword.invalid/se-iri'
+    with unittest.mock.patch.object(
+        InvenioSWH, "sword_client"
+    ) as sword_client:
+        sword_client.create.return_value.edit = "http://sword.invalid/edit-iri"
+        sword_client.create.return_value.edit_media = (
+            "http://sword.invalid/edit-media-iri"
+        )
+        sword_client.create.return_value.se_iri = "http://sword.invalid/se-iri"
 
-        record_item = rdm_with_swh_record_service.create(identity_simple, example_record, None)
+        record_item = rdm_with_swh_record_service.create(
+            identity_simple, example_record, None
+        )
         assert sword_client.create.called
 
-        internal_ext_data = record_item._record['ext'][InvenioSWHComponent.internal_ext_key]
+        internal_ext_data = record_item._record["ext"][
+            InvenioSWHComponent.internal_ext_key
+        ]

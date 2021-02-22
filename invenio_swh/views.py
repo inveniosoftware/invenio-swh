@@ -15,10 +15,10 @@ from flask import Blueprint, render_template
 from flask_babelex import gettext as _
 
 blueprint = Blueprint(
-    'invenio_swh',
+    "invenio_swh",
     __name__,
-    template_folder='templates',
-    static_folder='static',
+    template_folder="templates",
+    static_folder="static",
 )
 
 
@@ -26,5 +26,5 @@ blueprint = Blueprint(
 def index():
     """Render a basic view."""
     return render_template(
-        "invenio_swh/index.html",
-        module_name=_('invenio-swh'))
+        "invenio_swh/index.html", module_name=_("invenio-swh")
+    )

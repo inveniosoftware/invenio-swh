@@ -34,7 +34,6 @@ def upload_files(extension_name: str, cls_name: str, id: str) -> None:
 
         f.seek(0)
 
-        client.update_files_for_resource(f, 'package.zip')
-
+        client.update_files_for_resource(f, "package.zip")
 
     print(record)

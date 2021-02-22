@@ -34,7 +34,7 @@ from invenio_swh.components import InvenioSWHComponent
 from invenio_swh.views import blueprint
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def celery_config():
     """Override pytest-invenio fixture.
 
@@ -43,23 +43,21 @@ def celery_config():
     return {}
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def create_app(instance_path, entry_points):
     """Application factory fixture."""
 
     def app_factory(**config):
-        app = Flask('testapp', instance_path=instance_path)
+        app = Flask("testapp", instance_path=instance_path)
 
         app.config.update(
             **config,
-
             # SQLALCHEMY_DATABASE_URI=os.environ.get(
             #     'SQLALCHEMY_DATABASE_URI', 'sqlite:///' + db_filename),
             # TESTING=True,
-            JSONSCHEMAS_ENDPOINT='/schemas/',
-            JSONSCHEMAS_HOST='localhost',
-
-            INVENIO_SWH_COLLECTION_IRI='http://swh.invalid/'
+            JSONSCHEMAS_ENDPOINT="/schemas/",
+            JSONSCHEMAS_HOST="localhost",
+            INVENIO_SWH_COLLECTION_IRI="http://swh.invalid/"
         )
 
         Babel(app)
@@ -112,5 +110,5 @@ def identity_simple():
     """Simple identity fixture."""
     i = Identity(1)
     i.provides.add(UserNeed(1))
-    i.provides.add(Need(method='system_role', value='any_user'))
+    i.provides.add(Need(method="system_role", value="any_user"))
     return i

@@ -7,7 +7,9 @@ from .exceptions import (
     RecordHasNoFilesException,
 )
 
-CodeMeta = builder.ElementMaker(namespace="https://doi.org/10.5063/SCHEMA/CODEMETA-2.0")
+CodeMeta = builder.ElementMaker(
+    namespace="https://doi.org/10.5063/SCHEMA/CODEMETA-2.0"
+)
 
 
 class SWHMetadata:
@@ -42,10 +44,14 @@ class SWHMetadata:
         try:
             entry.add_field("title", data["metadata"]["title"])
         except KeyError as e:
-            raise MissingMandatoryMetadataException("A title is required.") from e
+            raise MissingMandatoryMetadataException(
+                "A title is required."
+            ) from e
 
         if not data["metadata"].get("creators"):
-            raise MissingMandatoryMetadataException("At least one creator is required.")
+            raise MissingMandatoryMetadataException(
+                "At least one creator is required."
+            )
 
         for creator in data["metadata"].get("creators"):
             # TODO: The schema says identifiers are a list of dicts
@@ -55,7 +61,9 @@ class SWHMetadata:
                 else None
             )
             # TODO: The schema says this should be creator['person_or_org']['name']
-            entry.add_author(name=creator['person_or_org']["name"], uri=orcid_uri)
+            entry.add_author(
+                name=creator["person_or_org"]["name"], uri=orcid_uri
+            )
 
     def add_codemeta_metadata(self, entry: sword2.Entry, data: dict) -> None:
         for date in data["metadata"].get("dates", []):

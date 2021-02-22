@@ -6,7 +6,9 @@ from invenio_records import Record
 from lxml import etree
 
 from invenio_rdm_records.records import RDMDraft
-from invenio_records_resources.services.records.components import ServiceComponent
+from invenio_records_resources.services.records.components import (
+    ServiceComponent,
+)
 from invenio_swh import InvenioSWH, tasks
 from invenio_swh.exceptions import (
     InvenioSWHException,
@@ -28,11 +30,15 @@ class InvenioSWHComponent(ServiceComponent):
         self.extension_name = extension_name
 
     def create(self, identity, *, data, record):
-        logger.debug("Record create (in_progress=%s)", isinstance(record, Draft))
+        logger.debug(
+            "Record create (in_progress=%s)", isinstance(record, Draft)
+        )
         self.sync_to_swh(data, record, in_progress=isinstance(record, Draft))
 
     def update(self, identity, *, data, record):
-        logger.debug("Record update (in_progress=%s)", isinstance(record, Draft))
+        logger.debug(
+            "Record update (in_progress=%s)", isinstance(record, Draft)
+        )
         self.sync_to_swh(data, record, in_progress=False)
 
     def publish(self, *, draft, record):
@@ -41,7 +47,7 @@ class InvenioSWHComponent(ServiceComponent):
         if internal_data.get("se-iri"):
             client = self.extension.sword_client
 
-            cls_name = f'{type(record).__module__}:{type(record).__qualname__}'
+            cls_name = f"{type(record).__module__}:{type(record).__qualname__}"
             tasks.upload_files(cls_name=cls_name, id=record.pid.pid_value)
             client.complete_deposit(se_iri=internal_data["se-iri"])
 
@@ -101,13 +107,15 @@ class InvenioSWHComponent(ServiceComponent):
                 }
             )
 
-        self.set_extension_data(record, self.internal_ext_key, user_data)
+        self.set_extension_data(record, self.user_ext_key, user_data)
         self.set_extension_data(record, self.internal_ext_key, internal_data)
 
     def get_extension_data(self, record: Record, key: str) -> dict:
         return record.get("ext", {}).get(key, {})
 
-    def set_extension_data(self, record: Record, key: str, extension_data) -> dict:
+    def set_extension_data(
+        self, record: Record, key: str, extension_data
+    ) -> dict:
         if extension_data:
             if "ext" not in record:
                 record["ext"] = {}

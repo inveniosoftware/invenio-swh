@@ -24,22 +24,22 @@ tests_require = [
 ]
 
 extras_require = {
-    'docs': [
-        'Sphinx>=3',
+    "docs": [
+        "Sphinx>=3",
     ],
-    'tests': tests_require,
+    "tests": tests_require,
 }
 
-extras_require['all'] = []
+extras_require["all"] = []
 for reqs in extras_require.values():
-    extras_require['all'].extend(reqs)
+    extras_require["all"].extend(reqs)
 
 setup_requires = [
-    'Babel>=2.8',
+    "Babel>=2.8",
 ]
 
 install_requires = [
-    'invenio-i18n>=1.2.0',
+    "invenio-i18n>=1.2.0",
     "invenio-rdm-records",
     "lxml",
     "sword2",
@@ -50,37 +50,37 @@ packages = find_packages()
 
 # Get the version string. Cannot be done with import!
 g = {}
-with open(os.path.join('invenio_swh', 'version.py'), 'rt') as fp:
+with open(os.path.join("invenio_swh", "version.py"), "rt") as fp:
     exec(fp.read(), g)
-    version = g['__version__']
+    version = g["__version__"]
 
 setup(
-    name='invenio-swh',
+    name="invenio-swh",
     version=version,
     description=__doc__,
-    long_description=readme + '\n\n' + history,
-    long_description_content_type='text/x-rst',
-    keywords='invenio TODO',
-    license='MIT',
-    author='Cottage Labs LLP',
-    author_email='info@inveniosoftware.org',
-    url='https://github.com/inveniosoftware/invenio-swh',
+    long_description=readme + "\n\n" + history,
+    long_description_content_type="text/x-rst",
+    keywords="invenio TODO",
+    license="MIT",
+    author="Cottage Labs LLP",
+    author_email="info@inveniosoftware.org",
+    url="https://github.com/inveniosoftware/invenio-swh",
     packages=packages,
     zip_safe=False,
     include_package_data=True,
-    platforms='any',
+    platforms="any",
     entry_points={
-        'invenio_base.apps': [
-            'invenio_swh = invenio_swh:InvenioSWH',
+        "invenio_base.apps": [
+            "invenio_swh = invenio_swh:InvenioSWH",
         ],
-        'invenio_base.api_apps': [
-            'invenio_swh = invenio_swh:InvenioSWH',
+        "invenio_base.api_apps": [
+            "invenio_swh = invenio_swh:InvenioSWH",
         ],
-        'invenio_base.blueprints': [
-            'invenio_swh = invenio_swh.views:blueprint',
+        "invenio_base.blueprints": [
+            "invenio_swh = invenio_swh.views:blueprint",
         ],
-        'invenio_i18n.translations': [
-            'messages = invenio_swh',
+        "invenio_i18n.translations": [
+            "messages = invenio_swh",
         ],
         # TODO: Edit these entry points to fit your needs.
         # 'invenio_access.actions': [],
@@ -99,17 +99,17 @@ setup(
     setup_requires=setup_requires,
     tests_require=tests_require,
     classifiers=[
-        'Environment :: Web Environment',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Development Status :: 1 - Planning',
+        "Environment :: Web Environment",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Development Status :: 1 - Planning",
     ],
 )
