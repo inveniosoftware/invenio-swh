@@ -12,8 +12,8 @@ import os
 
 from setuptools import find_packages, setup
 
-readme = open('README.rst').read()
-history = open('CHANGES.rst').read()
+readme = open("README.rst").read()
+history = open("CHANGES.rst").read()
 
 tests_require = [
     "pytest-invenio>=1.4.0",

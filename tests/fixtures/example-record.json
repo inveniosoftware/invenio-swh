@@ -33,6 +33,19 @@
         "title": "MIT License",
         "link": "https://opensource.org/licenses/MIT"
       }
-    ]
+    ],
+    "publication_date": "2021-01-01"
+  },
+  "access": {
+    "record": "public",
+    "files": "restricted",
+    "owned_by": [{
+      "user": 1
+    }],
+    "embargo": {
+      "active": true,
+      "until": "2131-01-01",
+      "reason": "Only for medical doctors."
+    }
   }
 }

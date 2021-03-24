@@ -10,6 +10,7 @@ from invenio_records_resources.services.records.components import (
     ServiceComponent,
 )
 from invenio_swh import InvenioSWH, tasks
+from invenio_swh.enum import ExtDataType
 from invenio_swh.exceptions import (
     InvenioSWHException,
     MissingMandatoryMetadataException,
@@ -21,9 +22,6 @@ logger = logging.getLogger(__name__)
 
 class InvenioSWHComponent(ServiceComponent):
     """A service component providing SWH integration with records."""
-
-    user_ext_key = "swh"
-    internal_ext_key = "swh-internal"
 
     def __init__(self, service, *, extension_name=InvenioSWH.extension_name):
         super().__init__(service)
@@ -43,13 +41,12 @@ class InvenioSWHComponent(ServiceComponent):
 
     def publish(self, *, draft, record):
         logger.debug("Record publish")
-        internal_data = self.get_extension_data(record, self.internal_ext_key)
-        if internal_data.get("se-iri"):
-            client = self.extension.sword_client
-
-            cls_name = f"{type(record).__module__}:{type(record).__qualname__}"
-            tasks.upload_files(cls_name=cls_name, id=record.pid.pid_value)
-            client.complete_deposit(se_iri=internal_data["se-iri"])
+        internal_data = self.extension.get_ext_data(record, ExtDataType.Internal)
+        if internal_data.get("edit-media-iri"):
+            # We can't use the record data, because it hasn't been saved yet
+            cls_name = f"{type(draft).__module__}:{type(draft).__qualname__}"
+            tasks.upload_files(extension_name=self.extension_name, cls_name=cls_name, id=draft.pid.pid_value)
+            tasks.complete_deposit(extension_name=self.extension_name, cls_name=cls_name, id=draft.pid.pid_value)
 
     def read(self, identity, *, record):
         # Hide our internal metadata from the search index and the user
@@ -61,8 +58,8 @@ class InvenioSWHComponent(ServiceComponent):
         self.sync_to_swh(data, record, in_progress=True)
 
     def sync_to_swh(self, data: dict, record: Record, in_progress: bool):
-        user_data = self.get_extension_data(record, self.user_ext_key)
-        internal_data = self.get_extension_data(record, self.internal_ext_key)
+        user_data = self.extension.get_ext_data(record, ExtDataType.UserFacing)
+        internal_data = self.extension.get_ext_data(record, ExtDataType.Internal)
 
         # Clear any error information
         user_data.pop("error", None)
@@ -107,23 +104,8 @@ class InvenioSWHComponent(ServiceComponent):
                 }
             )
 
-        self.set_extension_data(record, self.user_ext_key, user_data)
-        self.set_extension_data(record, self.internal_ext_key, internal_data)
-
-    def get_extension_data(self, record: Record, key: str) -> dict:
-        return record.get("ext", {}).get(key, {})
-
-    def set_extension_data(
-        self, record: Record, key: str, extension_data
-    ) -> dict:
-        if extension_data:
-            if "ext" not in record:
-                record["ext"] = {}
-            record["ext"][key] = extension_data
-        elif "ext" in record:
-            record["ext"].pop(str, None)
-            if not record["ext"]:
-                del record["ext"]
+        self.extension.set_ext_data(record, ExtDataType.UserFacing, user_data)
+        self.extension.set_ext_data(record, ExtDataType.Internal, internal_data)
 
     @property
     def extension(self) -> InvenioSWH:

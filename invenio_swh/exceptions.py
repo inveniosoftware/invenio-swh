@@ -19,3 +19,7 @@ class NotSoftwareRecordException(InvenioSWHException, ValueError):
 
 class RecordHasNoFilesException(InvenioSWHException):
     annotate_record = True
+
+
+class DepositNotStartedException(InvenioSWHException):
+    pass

@@ -12,7 +12,9 @@ import typing
 from flask import current_app
 
 import sword2
+from invenio_records import Record
 from . import config
+from .enum import ExtDataType
 from .metadata import SWHMetadata
 
 
@@ -80,3 +82,21 @@ class InvenioSWH(object):
     @property
     def metadata(self) -> SWHMetadata:
         return self.metadata_cls(self)
+
+    def get_ext_data(self, record: Record, type: ExtDataType) -> dict:
+        return record.get("ext", {}).get(self._ext_data_key(type), {})
+
+    def set_ext_data(
+        self, record: Record, type: ExtDataType, extension_data
+    ) -> dict:
+        if extension_data:
+            if "ext" not in record:
+                record["ext"] = {}
+            record["ext"][self._ext_data_key(type)] = extension_data
+        elif "ext" in record:
+            record["ext"].pop(self._ext_data_key(type), None)
+            if not record["ext"]:
+                del record["ext"]
+
+    def _ext_data_key(self, type: ExtDataType) -> str:
+        return type.value

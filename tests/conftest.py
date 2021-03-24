@@ -14,7 +14,7 @@ fixtures are available.
 
 import json
 import os
-import tempfile
+import unittest.mock
 
 import pytest
 from flask import Flask
@@ -91,10 +91,7 @@ def example_record():
 class RDMWithSWHRecordServiceConfig(RDMRecordServiceConfig):
     """A record service config with our SWH component."""
 
-    @classmethod
-    def indexer_cls(cls, *args, **kwargs):
-        """Disable indexing by not returning an indexer class."""
-        return None
+    indexer_cls = unittest.mock.Mock
 
     components = [
         *RDMRecordServiceConfig.components,
