@@ -9,11 +9,15 @@ class InvenioSWHException(Exception):
     """
 
 
-class MissingMandatoryMetadataException(InvenioSWHException, ValueError):
+class MissingMandatoryMetadataException(InvenioSWHException):
     annotate_record = True
 
 
-class NotSoftwareRecordException(InvenioSWHException, ValueError):
+class SoftwareNotOpenlyPublishedException(InvenioSWHException):
+    annotate_record = True
+
+
+class NotSoftwareRecordException(InvenioSWHException):
     pass
 
 
@@ -22,4 +26,12 @@ class RecordHasNoFilesException(InvenioSWHException):
 
 
 class DepositNotStartedException(InvenioSWHException):
+    pass
+
+
+class DepositNotYetDone(InvenioSWHException):
+    """An exception to trigger retrying updating status"""
+
+
+class DepositProcessingFailedException(InvenioSWHException):
     pass

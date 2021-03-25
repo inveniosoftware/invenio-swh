@@ -29,6 +29,17 @@ class InvenioSWH(object):
     username_config_key = "INVENIO_SWH_USERNAME"
     password_config_key = "INVENIO_SWH_PASSWORD"
 
+    # This is the mapping from Atom status elements to elements in the user-facing
+    # extension data
+    status_mapping = {
+        "sd:deposit_id": "depositId",
+        "sd:deposit_status": "status",
+        "sd:deposit_swh_id": "swhidCore",
+        "sd:deposit_swh_id_context": "swhid",
+        "sd:deposit_status_detail": "statusDetail",
+        "sd:deposit_origin_url": "originUrl",
+    }
+
     metadata_cls: typing.Type[SWHMetadata] = SWHMetadata
 
     def __init__(self, app=None):
@@ -86,9 +97,7 @@ class InvenioSWH(object):
     def get_ext_data(self, record: Record, type: ExtDataType) -> dict:
         return record.get("ext", {}).get(self._ext_data_key(type), {})
 
-    def set_ext_data(
-        self, record: Record, type: ExtDataType, extension_data
-    ) -> dict:
+    def set_ext_data(self, record: Record, type: ExtDataType, extension_data) -> None:
         if extension_data:
             if "ext" not in record:
                 record["ext"] = {}

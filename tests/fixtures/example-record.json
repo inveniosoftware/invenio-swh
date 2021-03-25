@@ -1,4 +1,7 @@
 {
+  "access": {
+    "access_right": "open"
+  },
   "metadata": {
     "resource_type": {
       "type": "software"

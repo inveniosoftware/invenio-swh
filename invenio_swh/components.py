@@ -28,25 +28,29 @@ class InvenioSWHComponent(ServiceComponent):
         self.extension_name = extension_name
 
     def create(self, identity, *, data, record):
-        logger.debug(
-            "Record create (in_progress=%s)", isinstance(record, Draft)
-        )
+        logger.debug("Record create (in_progress=%s)", isinstance(record, Draft))
         self.sync_to_swh(data, record, in_progress=isinstance(record, Draft))
 
     def update(self, identity, *, data, record):
-        logger.debug(
-            "Record update (in_progress=%s)", isinstance(record, Draft)
-        )
+        logger.debug("Record update (in_progress=%s)", isinstance(record, Draft))
         self.sync_to_swh(data, record, in_progress=False)
 
     def publish(self, *, draft, record):
         logger.debug("Record publish")
         internal_data = self.extension.get_ext_data(record, ExtDataType.Internal)
         if internal_data.get("edit-media-iri"):
-            # We can't use the record data, because it hasn't been saved yet
-            cls_name = f"{type(draft).__module__}:{type(draft).__qualname__}"
-            tasks.upload_files(extension_name=self.extension_name, cls_name=cls_name, id=draft.pid.pid_value)
-            tasks.complete_deposit(extension_name=self.extension_name, cls_name=cls_name, id=draft.pid.pid_value)
+            # By the time the task is executed, the record will have been saved.
+            cls_name = f"{type(record).__module__}:{type(record).__qualname__}"
+            task_kwargs = {
+                "extension_name": self.extension_name,
+                "cls_name": cls_name,
+                "id": draft.pid.pid_value,
+            }
+            tasks.upload_files.s(**task_kwargs).apply_async(
+                # Hard-coded; not great. Would prefer to tie this to session commit
+                countdown=5,
+                link=tasks.complete_deposit.s(**task_kwargs),
+            )
 
     def read(self, identity, *, record):
         # Hide our internal metadata from the search index and the user
@@ -96,13 +100,16 @@ class InvenioSWHComponent(ServiceComponent):
             result = None
 
         if result:
-            internal_data.update(
-                {
-                    "edit-iri": result.edit,
-                    "edit-media-iri": result.edit_media,
-                    "se-iri": result.se_iri,
-                }
-            )
+            if result.edit:
+                internal_data["edit-iri"] = result.edit
+            if result.edit_media:
+                internal_data["edit-media-iri"] = result.edit_media
+            if result.se_iri:
+                internal_data["se-iri"] = result.se_iri
+            if result.links.get("alternate"):
+                internal_data["status-iri"] = result.links["alternate"][0]["href"]
+
+        print(internal_data)
 
         self.extension.set_ext_data(record, ExtDataType.UserFacing, user_data)
         self.extension.set_ext_data(record, ExtDataType.Internal, internal_data)

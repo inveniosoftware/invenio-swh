@@ -5,11 +5,10 @@ from .exceptions import (
     MissingMandatoryMetadataException,
     NotSoftwareRecordException,
     RecordHasNoFilesException,
+    SoftwareNotOpenlyPublishedException,
 )
 
-CodeMeta = builder.ElementMaker(
-    namespace="https://doi.org/10.5063/SCHEMA/CODEMETA-2.0"
-)
+CodeMeta = builder.ElementMaker(namespace="https://doi.org/10.5063/SCHEMA/CODEMETA-2.0")
 
 
 class SWHMetadata:
@@ -30,6 +29,11 @@ class SWHMetadata:
                 "Depositing to Software Heritage requires a non-metadata-only record."
             )
 
+        if data.get("access", {}).get("access_right") != "open":
+            raise SoftwareNotOpenlyPublishedException(
+                "Software Heritage only accepts deposits of files that are openly published."
+            )
+
         entry = sword2.Entry()
         for prefix in self.namespaces:
             entry.register_namespace(prefix, self.namespaces[prefix])
@@ -44,28 +48,32 @@ class SWHMetadata:
         try:
             entry.add_field("title", data["metadata"]["title"])
         except KeyError as e:
-            raise MissingMandatoryMetadataException(
-                "A title is required."
-            ) from e
-
-        if not data["metadata"].get("creators"):
-            raise MissingMandatoryMetadataException(
-                "At least one creator is required."
-            )
-
-        for creator in data["metadata"].get("creators"):
-            # TODO: The schema says identifiers are a list of dicts
-            orcid_uri = (
-                ("https://orcid.org/" + creator["identifiers"]["orcid"])
-                if creator.get("identifiers", {}).get("orcid")
-                else None
-            )
-            # TODO: The schema says this should be creator['person_or_org']['name']
-            entry.add_author(
-                name=creator["person_or_org"]["name"], uri=orcid_uri
-            )
+            raise MissingMandatoryMetadataException("A title is required.") from e
 
     def add_codemeta_metadata(self, entry: sword2.Entry, data: dict) -> None:
+        if not data["metadata"].get("creators"):
+            raise MissingMandatoryMetadataException("At least one creator is required.")
+
+        for key, CodeMeta_element in [
+            ("creators", CodeMeta.author),
+            ("contributors", CodeMeta.contributor),
+        ]:
+            for creator in data["metadata"].get(key, []):
+                # TODO: The schema says identifiers are a list of dicts
+                orcids = [
+                    identifier["identifier"]
+                    for identifier in creator["person_or_org"].get("identifiers", [])
+                    if identifier["scheme"] == "orcid"
+                ]
+                person = CodeMeta_element(
+                    CodeMeta.name(creator["person_or_org"]["name"])
+                )
+                if orcids:
+                    person.append(CodeMeta.id(f"https://orcid.org/{orcids[0]}"))
+                for affiliation in creator.get("affiliations", []):
+                    person.append(CodeMeta.affiliation(affiliation["name"]))
+                entry.entry.append(person)
+
         for date in data["metadata"].get("dates", []):
             if not date.get("date"):
                 continue
@@ -79,9 +87,17 @@ class SWHMetadata:
             entry.entry.append(
                 CodeMeta.license(
                     CodeMeta.name(rights["title"]),
-                    CodeMeta.url(rights["link"]),
+                    CodeMeta.url(f"http://spdx.org/licenses/{rights['id']}.html"),
                 )
             )
+
+        if data["metadata"].get("description"):
+            entry.entry.append(
+                CodeMeta.description(data["metadata"]["description"], type="text/html")
+            )
+
+        if data["metadata"].get("version"):
+            entry.entry.append(CodeMeta.softwareVersion(data["metadata"]["version"]))
 
     def add_swh_metadata(self, entry: sword2.Entry, data: dict) -> None:
         pass
