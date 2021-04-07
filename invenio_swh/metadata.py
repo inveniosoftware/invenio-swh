@@ -93,7 +93,8 @@ class SWHMetadata:
 
         if data["metadata"].get("description"):
             entry.entry.append(
-                CodeMeta.description(data["metadata"]["description"], type="text/html")
+                # TODO: Not explicitly marked as text/html
+                CodeMeta.description(data["metadata"]["description"])
             )
 
         if data["metadata"].get("version"):
