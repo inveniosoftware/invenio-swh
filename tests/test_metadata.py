@@ -43,17 +43,17 @@ def test_metadata_for_example_record(example_record):
             {etree.tounicode(metadata_entry.entry.xpath(
                 'atom:updated', namespaces=metadata_entry.nsmap)[0])}
             <atom:title>Invenio</atom:title>
-            <atom:author>
-                <atom:name>CERN</atom:name>
-            </atom:author>
-            <atom:author>
-                <atom:name>other contributors</atom:name>
-            </atom:author>
+            <codemeta:author>
+                <codemeta:name>CERN</codemeta:name>
+            </codemeta:author>
+            <codemeta:author>
+                <codemeta:name>other contributors</codemeta:name>
+            </codemeta:author>
             <codemeta:dateCreated>2019-01-01</codemeta:dateCreated>
             <codemeta:datePublished>2021-01-25</codemeta:datePublished>
             <codemeta:license>
                 <codemeta:name>MIT License</codemeta:name>
-                <codemeta:url>https://opensource.org/licenses/MIT</codemeta:url>
+                <codemeta:url>http://spdx.org/licenses/MIT</codemeta:url>
             </codemeta:license>
         </entry>
     """,

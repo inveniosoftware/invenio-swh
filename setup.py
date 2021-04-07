@@ -16,7 +16,6 @@ readme = open("README.rst").read()
 history = open("CHANGES.rst").read()
 
 tests_require = [
-    "pytest-invenio>=1.4.0",
     "invenio-db[postgresql,versioning]",
     "invenio-search[elasticsearch7]",
     "pytest-invenio>=1.4.0",

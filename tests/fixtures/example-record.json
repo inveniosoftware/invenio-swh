@@ -1,7 +1,4 @@
 {
-  "access": {
-    "access_right": "open"
-  },
   "metadata": {
     "resource_type": {
       "type": "software"
@@ -33,6 +30,7 @@
     ],
     "rights": [
       {
+        "id": "MIT",
         "title": "MIT License",
         "link": "https://opensource.org/licenses/MIT"
       }
@@ -41,7 +39,7 @@
   },
   "access": {
     "record": "public",
-    "files": "restricted",
+    "files": "public",
     "owned_by": [{
       "user": 1
     }],

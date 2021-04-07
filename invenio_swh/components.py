@@ -35,7 +35,7 @@ class InvenioSWHComponent(ServiceComponent):
         logger.debug("Record update (in_progress=%s)", isinstance(record, Draft))
         self.sync_to_swh(data, record, in_progress=False)
 
-    def publish(self, *, draft, record):
+    def publish(self, identity, *, draft, record):
         logger.debug("Record publish")
         internal_data = self.extension.get_ext_data(record, ExtDataType.Internal)
         if internal_data.get("edit-media-iri"):

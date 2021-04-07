@@ -18,6 +18,9 @@ def mock_deposit_response():
     deposit_response.edit = "http://sword.invalid/edit-iri"
     deposit_response.edit_media = "http://sword.invalid/edit-media-iri"
     deposit_response.se_iri = "http://sword.invalid/se-iri"
+    deposit_response.links = {
+        "alternate": [{"href": "http://sword.invalid/status-iri"}]
+    }
     return deposit_response
 
 
@@ -28,17 +31,11 @@ def test_create_draft_non_software(
     database,
     location,
 ):
-    with unittest.mock.patch.object(
-        InvenioSWH, "sword_client"
-    ) as sword_client:
-        record_item = rdm_with_swh_record_service.create(
-            identity_simple, {}, None
-        )
+    with unittest.mock.patch.object(InvenioSWH, "sword_client") as sword_client:
+        record_item = rdm_with_swh_record_service.create(identity_simple, {}, None)
         assert not sword_client.create.called
         with pytest.raises(KeyError):
-            _ = record_item._record["ext"][
-                InvenioSWHComponent.internal_ext_key
-            ]
+            _ = record_item._record["ext"][InvenioSWHComponent.internal_ext_key]
 
 
 def test_create_draft_software(
@@ -50,9 +47,7 @@ def test_create_draft_software(
     location,
     mock_deposit_response,
 ):
-    with unittest.mock.patch.object(
-        InvenioSWH, "sword_client"
-    ) as sword_client:
+    with unittest.mock.patch.object(InvenioSWH, "sword_client") as sword_client:
         sword_client.create.return_value = mock_deposit_response
 
         record_item = rdm_with_swh_record_service.create(
@@ -61,9 +56,7 @@ def test_create_draft_software(
         assert sword_client.create.called
 
         ext_data = record_item._record["ext"][
-            InvenioSWHComponent(
-                rdm_with_swh_record_service
-            ).extension._ext_data_key(
+            InvenioSWHComponent(rdm_with_swh_record_service).extension._ext_data_key(
                 ExtDataType.Internal
             )
         ]
@@ -84,9 +77,7 @@ def test_publish_software(
 ):
     files_service = RDMDraftFilesService()
 
-    with unittest.mock.patch.object(
-        InvenioSWH, "sword_client"
-    ) as sword_client:
+    with unittest.mock.patch.object(InvenioSWH, "sword_client") as sword_client:
         sword_client.create.return_value = mock_deposit_response
 
         record_item = rdm_with_swh_record_service.create(
@@ -116,7 +107,6 @@ def test_publish_software(
             id_=record.pid.pid_value,
             identity=identity_simple,
             file_key="data.txt",
-
         )
 
         rdm_with_swh_record_service.publish(

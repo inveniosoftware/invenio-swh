@@ -81,9 +81,7 @@ def create_app(instance_path, entry_points):
 def example_record():
     """An example record as a JSON-like Python structure."""
     with open(
-        os.path.join(
-            os.path.dirname(__file__), "fixtures", "example-record.json"
-        )
+        os.path.join(os.path.dirname(__file__), "fixtures", "example-record.json")
     ) as f:
         return json.load(f)
 
@@ -110,5 +108,6 @@ def identity_simple():
     """Simple identity fixture."""
     i = Identity(1)
     i.provides.add(UserNeed(1))
+    i.provides.add(Need(method="system_role", value="authenticated_user"))
     i.provides.add(Need(method="system_role", value="any_user"))
     return i

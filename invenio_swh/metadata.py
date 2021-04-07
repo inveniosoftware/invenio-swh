@@ -29,9 +29,13 @@ class SWHMetadata:
                 "Depositing to Software Heritage requires a non-metadata-only record."
             )
 
-        if data.get("access", {}).get("access_right") != "open":
+        if (
+            data.get("access", {}).get("record") != "public"
+            or data.get("access", {}).get("files") != "public"
+        ):
             raise SoftwareNotOpenlyPublishedException(
-                "Software Heritage only accepts deposits of files that are openly published."
+                "Software Heritage only accepts deposits where both the record and "
+                "files are openly published."
             )
 
         entry = sword2.Entry()
