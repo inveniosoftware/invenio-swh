@@ -87,7 +87,7 @@ class SWHMetadata:
             entry.entry.append(
                 CodeMeta.license(
                     CodeMeta.name(rights["title"]),
-                    CodeMeta.url(f"http://spdx.org/licenses/{rights['id']}.html"),
+                    CodeMeta.url(f"http://spdx.org/licenses/{rights['id']}"),
                 )
             )
 
