@@ -1,7 +1,7 @@
 {
   "metadata": {
     "resource_type": {
-      "type": "software"
+      "id": "software"
     },
     "title": "Invenio",
     "creators": [

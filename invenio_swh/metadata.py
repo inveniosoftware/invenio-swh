@@ -109,6 +109,6 @@ class SWHMetadata:
 
     def is_software_record_data(self, data: dict) -> bool:
         try:
-            return data["metadata"]["resource_type"]["type"] == "software"
+            return data["metadata"]["resource_type"]["id"] == "software"
         except KeyError:
             return False
