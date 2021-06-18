@@ -27,7 +27,7 @@ class InvenioSWHComponent(ServiceComponent):
         super().__init__(service)
         self.extension_name = extension_name
 
-    def create(self, identity, *, data, record):
+    def create(self, identity, *, data, record, errors):
         logger.debug("Record create (in_progress=%s)", isinstance(record, Draft))
         self.sync_to_swh(data, record, in_progress=isinstance(record, Draft))
 
