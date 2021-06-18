@@ -5,7 +5,9 @@ import pytest
 from flask import Flask
 from flask_principal import Identity
 from invenio_rdm_records.records import RDMRecord
-from invenio_rdm_records.services import RDMDraftFilesService, RDMRecordService
+from invenio_rdm_records.services import RDMFileDraftServiceConfig, \
+    RDMFileRecordServiceConfig, RDMRecordService
+from invenio_records_resources.services import FileService
 
 from invenio_swh import InvenioSWH
 from invenio_swh.components import InvenioSWHComponent
@@ -32,7 +34,7 @@ def test_create_draft_non_software(
     location,
 ):
     with unittest.mock.patch.object(InvenioSWH, "sword_client") as sword_client:
-        record_item = rdm_with_swh_record_service.create(identity_simple, {}, None)
+        record_item = rdm_with_swh_record_service.create(identity_simple, {})
         assert not sword_client.create.called
         with pytest.raises(KeyError):
             _ = record_item._record["ext"][InvenioSWHComponent.internal_ext_key]
@@ -46,12 +48,13 @@ def test_create_draft_software(
     database,
     location,
     mock_deposit_response,
+    resource_type_software,
 ):
     with unittest.mock.patch.object(InvenioSWH, "sword_client") as sword_client:
         sword_client.create.return_value = mock_deposit_response
 
         record_item = rdm_with_swh_record_service.create(
-            identity_simple, example_record, None
+            identity_simple, example_record
         )
         assert sword_client.create.called
 
@@ -74,14 +77,15 @@ def test_publish_software(
     base_app: Flask,
     database,
     location,
+    resource_type_software,
+    files_service,
 ):
-    files_service = RDMDraftFilesService()
 
     with unittest.mock.patch.object(InvenioSWH, "sword_client") as sword_client:
         sword_client.create.return_value = mock_deposit_response
 
         record_item = rdm_with_swh_record_service.create(
-            identity_simple, example_record, None
+            identity_simple, example_record
         )
 
         record: RDMRecord = record_item._record
