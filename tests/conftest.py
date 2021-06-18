@@ -80,7 +80,6 @@ def create_app(instance_path, entry_points):
             #     'SQLALCHEMY_DATABASE_URI', 'sqlite:///' + db_filename),
             # TESTING=True,
             JSONSCHEMAS_ENDPOINT="/schemas/",
-            JSONSCHEMAS_HOST="localhost",
             INVENIO_SWH_COLLECTION_IRI="http://swh.invalid/"
         )
 
