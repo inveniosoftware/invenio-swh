@@ -52,6 +52,15 @@ class InvenioSWH(object):
         self.init_config(app)
         app.extensions[self.extension_name] = self
 
+        from invenio_rdm_records.services import RDMRecordServiceConfig
+        from .components import InvenioSWHComponent
+
+        if InvenioSWHComponent not in RDMRecordServiceConfig.components:
+            RDMRecordServiceConfig.components = [
+                *RDMRecordServiceConfig.components,
+                InvenioSWHComponent,
+            ]
+
     def init_config(self, app):
         """Initialize configuration."""
         # Use theme's base template if theme is installed
