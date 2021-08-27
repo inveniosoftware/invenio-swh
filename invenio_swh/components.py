@@ -37,6 +37,7 @@ class InvenioSWHComponent(ServiceComponent):
 
     def publish(self, identity, *, draft, record):
         logger.debug("Record publish")
+        self.sync_to_swh(draft, record, in_progress=True)
         internal_data = self.extension.get_ext_data(record, ExtDataType.Internal)
         if internal_data.get("edit-media-iri"):
             # By the time the task is executed, the record will have been saved.
@@ -56,10 +57,6 @@ class InvenioSWHComponent(ServiceComponent):
         # Hide our internal metadata from the search index and the user
         # self.set_extension_data(record, self.internal_ext_key, None)
         pass
-
-    def update_draft(self, identity, *, data, record: RDMDraft):
-        logger.debug("Record update draft")
-        self.sync_to_swh(data, record, in_progress=True)
 
     def sync_to_swh(self, data: dict, record: Record, in_progress: bool):
         user_data = self.extension.get_ext_data(record, ExtDataType.UserFacing)
