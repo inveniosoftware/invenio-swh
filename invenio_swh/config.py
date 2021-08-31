@@ -12,11 +12,8 @@
 INVENIO_SWH_BASE_TEMPLATE = "invenio_swh/base.html"
 """Default base template for the demo page."""
 
-INVENIO_SWH_SERVICES = {
-    "swh": {
-        "NAME": "Software Heritage",
-        "SERVICE_DOCUMENT": "https://deposit.softwareheritage.org/1/servicedocument/",
-        "USERNAME": None,
-        "PASSWORD": None,
-    }
-}
+
+INVENIO_SWH_SERVICE_DOCUMENT= "https://deposit.softwareheritage.org/1/servicedocument/"
+INVENIO_SWH_USERNAME = None
+INVENIO_SWH_PASSWORD = None
+INVENIO_SWH_COLLECTION_IRI = None

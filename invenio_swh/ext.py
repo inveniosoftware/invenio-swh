@@ -94,7 +94,7 @@ class InvenioSWH(object):
     def is_configured(self) -> bool:
         return bool(
             current_app.config.get(self.url_config_key)
-            and current_app.config.get(self.collection_name_config_key)
+            and current_app.config.get(self.collection_iri_config_key)
             and current_app.config.get(self.username_config_key)
             and current_app.config.get(self.password_config_key)
         )
