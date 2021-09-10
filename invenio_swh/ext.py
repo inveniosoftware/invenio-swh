@@ -29,6 +29,10 @@ class InvenioSWH(object):
     username_config_key = "INVENIO_SWH_USERNAME"
     password_config_key = "INVENIO_SWH_PASSWORD"
 
+    detail_side_bar_template_name = (
+        "invenio_swh/records/details/side_bar/invenio_swh.html"
+    )
+
     # This is the mapping from Atom status elements to elements in the user-facing
     # extension data
     status_mapping = {
@@ -55,11 +59,22 @@ class InvenioSWH(object):
         from invenio_rdm_records.services import RDMRecordServiceConfig
         from .components import InvenioSWHComponent
 
+        # Inject our service component
         if InvenioSWHComponent not in RDMRecordServiceConfig.components:
             RDMRecordServiceConfig.components = [
                 *RDMRecordServiceConfig.components,
                 InvenioSWHComponent,
             ]
+
+        # Inject our record detail sidebar template
+        if (
+            "APP_RDM_DETAIL_SIDE_BAR_TEMPLATES" in app.config
+            and self.detail_side_bar_template_name
+            not in app.config["APP_RDM_DETAIL_SIDE_BAR_TEMPLATES"]
+        ):
+            app.config["APP_RDM_DETAIL_SIDE_BAR_TEMPLATES"].append(
+                self.detail_side_bar_template_name
+            )
 
     def init_config(self, app):
         """Initialize configuration."""
