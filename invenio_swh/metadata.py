@@ -1,3 +1,6 @@
+from flask import current_app, g
+from flask_principal import AnonymousIdentity
+from invenio_access import any_user
 from lxml import etree, builder
 
 import sword2
@@ -7,6 +10,9 @@ from .exceptions import (
     RecordHasNoFilesException,
     SoftwareNotOpenlyPublishedException,
 )
+
+metadata_identity = AnonymousIdentity()
+metadata_identity.provides.add(any_user)
 
 CodeMeta = builder.ElementMaker(namespace="https://doi.org/10.5063/SCHEMA/CODEMETA-2.0")
 
@@ -88,9 +94,12 @@ class SWHMetadata:
                 entry.add_field("codemeta_datePublished", date_value)
 
         for rights in data["metadata"].get("rights", []):
+            license = current_app.extensions["invenio-vocabularies"].service.read(
+                ("licenses", rights["id"]), identity=metadata_identity
+            )
             entry.entry.append(
                 CodeMeta.license(
-                    CodeMeta.name(rights["title"]),
+                    CodeMeta.name(license["title"].get('en', '')),
                     CodeMeta.url(f"http://spdx.org/licenses/{rights['id']}"),
                 )
             )
