@@ -1,132 +1,86 @@
-import lxml.etree
-import tarfile
-import logging
-import tempfile
-
 from celery.app import shared_task
 from flask import current_app
-from invenio_db import db
+from invenio_access.permissions import system_identity
+from invenio_rdm_records.proxies import current_rdm_records_service as record_service
+from invenio_records_resources.services.uow import UnitOfWork
+from werkzeug.local import LocalProxy
 
-from invenio_records.api import RecordBase
-from werkzeug.utils import import_string
+from invenio_swh.errors import DepositWaiting, InvalidRecord
+from invenio_swh.models import SWHDepositStatus
+from invenio_swh.proxies import current_swh_service as service
 
-from invenio_swh import exceptions, InvenioSWH
-from invenio_swh.constants import NAMESPACES
-from invenio_swh.enum import ExtDataType
-
-logger = logging.getLogger(__name__)
-
-
-def _get_record(cls_name: str, id: str) -> RecordBase:
-    cls = import_string(cls_name)
-    assert issubclass(cls, RecordBase)
-    return cls.pid.resolve(id, registered_only=False)
+rate_limit = LocalProxy(lambda: current_app.config["SWH_RATE_LIMIT"])
 
 
-def _get_extension(extension_name: str) -> InvenioSWH:
-    extension = current_app.extensions[extension_name]
-    assert isinstance(extension, InvenioSWH)
-    return extension
+@shared_task(max_retries=3, rate_limit=rate_limit)
+def process_published_record(pid):
+    """Processes a published record.
 
+    Attempts to create a deposit using Software Heritage service. The local deposit creation is carried out  in a separate transaction
+    in order to store the deposit ID and possible failed status.
 
-# Each of these takes a positional-only result parameter that is ignored. This means
-# that tasks can be chained together, as we can discard the result passed as the first
-# argument to the next task.
+    Within a separate, single transaction, it uploads files associated with the record to the deposit and then completes it.
 
+    After the deposit is completed, the function daisy chains another celery task to start polling the deposit status.
 
-@shared_task
-def upload_files(
-    result=None, /, *, extension_name: str, cls_name: str, id: str
-) -> None:
-    record = _get_record(cls_name, id)
-    extension = _get_extension(extension_name)
-    client = extension.sword_client
+    If the record is invalid (e.g. not a software record), the function does not retry.
 
-    internal_data = extension.get_ext_data(record, ExtDataType.Internal)
-    if "edit-media-iri" not in internal_data:
-        raise exceptions.DepositNotStartedException
+    Args:
+        pid (str): The record ID.
+    """
+    record = record_service.read(system_identity, id_=pid)
 
-    with tempfile.TemporaryFile() as f:
-        tar = tarfile.open(fileobj=f, mode="w:gz")
+    try:
+        # Create the deposit in a separate transaction to store the deposit ID and possible failed status
+        deposit = service.create(record._record)
+    except Exception as exc:
+        # If it fails, the deposit was rolled back. We can create it later if the record is valid.
+        if not isinstance(exc, InvalidRecord):
+            process_published_record.retry(exc=exc)
+        return
 
-        for object_version in record.bucket.objects:
-            with object_version.file.storage().open() as g:
-                tarinfo = tarfile.TarInfo(object_version.key)
-                tarinfo.size = object_version.file.size
-                tar.addfile(tarinfo, fileobj=g)
+    with UnitOfWork() as uow:
+        # TODO if these fails, the deposit should be "FAILED" and not "CREATED" or "WAITING".
+        service.upload_files(deposit.id, record._record.files, uow=uow)
+        service.complete(deposit.id, uow=uow)
 
-        tar.close()
-
-        f.seek(0)
-
-        result = client.update_files_for_resource(
-            f,
-            "package.tar.gz",
-            edit_media_iri=internal_data["edit-media-iri"],
-            mimetype="application/x-tar",  # Even though it's also gzipped.
-            packaging="http://purl.org/net/sword/package/SimpleZip",
-            in_progress=True,
-        )
-
-        print(result)
-
-
-@shared_task
-def complete_deposit(
-    result=None, /, *, extension_name: str, cls_name: str, id: str
-) -> None:
-    record = _get_record(cls_name, id)
-    extension = _get_extension(extension_name)
-    client = extension.sword_client
-
-    internal_data = extension.get_ext_data(record, ExtDataType.Internal)
-    if "edit-media-iri" not in internal_data:
-        raise exceptions.DepositNotStartedException
-
-    client.complete_deposit(se_iri=internal_data["se-iri"])
-
-    # Start looking for the deposit to be processed
-    update_status_from_swh.delay(
-        extension_name=extension_name, cls_name=cls_name, id=id
-    )
+    poll_deposit.delay(str(deposit.id))
 
 
 @shared_task(
-    autoretry_for=(exceptions.DepositNotYetDone,),
-    retry_backoff=10,
-    retry_kwargs={"max_retries": 20},
+    rate_limit=rate_limit,
+    retry_backoff=60,
+    autoretry_for=(DepositWaiting,),
+    max_retries=5,
+    throws=(DepositWaiting,),
 )
-def update_status_from_swh(
-    result=None, /, *, extension_name: str, cls_name: str, id: str
-) -> None:
-    record = _get_record(cls_name, id)
-    extension = _get_extension(extension_name)
-    client = extension.sword_client
+def poll_deposit(id_):
+    """Polls the status of a deposit.
 
-    internal_data = extension.get_ext_data(record, ExtDataType.Internal)
-    if "status-iri" not in internal_data:
-        raise exceptions.DepositNotStartedException
+    ``retry_backoff`` specifices that the time between retries will increase exponentially, starting at, e.g, 60 seconds (60, 120, etc  up until the default of 10 minutes).
 
-    resp, content = client.h.request(internal_data["status-iri"], "GET")
-    atom_status = lxml.etree.fromstring(content)
+    Args:
+        id_ (str): The ID of the deposit to poll.
 
-    user_facing_data = extension.get_ext_data(record, ExtDataType.UserFacing)
+    Raises:
+        StillWaitingException: If the deposit status is "waiting".
+    """
+    deposit = service.read(id_).deposit
+    service.sync_status(deposit.id)
+    new_status = deposit.status
+    if new_status == SWHDepositStatus.WAITING:
+        raise DepositWaiting("Deposit is still waiting")
 
-    for name, key in extension.status_mapping.items():
-        elements = atom_status.xpath(f"//{name}", namespaces=NAMESPACES)
-        if elements and elements[0].text:
-            user_facing_data[key] = elements[0].text
 
-    extension.set_ext_data(record, ExtDataType.UserFacing, user_facing_data)
-    record.commit()
-    db.session.commit()
-
-    if user_facing_data.get("status") == "error":
-        raise exceptions.DepositProcessingFailedException(
-            user_facing_data.get("statusDetail")
-        )
-
-    if user_facing_data.get("status") != "done":
-        raise exceptions.DepositNotYetDone
-
-    print(atom_status)
+# @shared_task()
+# def retry_failed_deposits():
+#     try:
+#         result = service.get_unfinished_deposits()
+#         for deposit in result:
+#             res = service.fetch_remote_status(deposit)
+#             status = res.get("deposit_status")
+#             service.update_status(deposit, status)
+#             if res.get("deposit_swh_id"):
+#                 service.update_swhid(deposit, res.get("deposit_swh_id"))
+#     except Exception as exc:
+#         current_app.logger.exception(str(exc))

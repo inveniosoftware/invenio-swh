@@ -11,135 +11,93 @@
 See https://pytest-invenio.readthedocs.io/ for documentation on which test
 fixtures are available.
 """
-
-import json
-import os
-import unittest.mock
-import uuid
+from collections import namedtuple
 
 import pytest
-from flask import Flask
-from flask_babelex import Babel
 from flask_principal import Identity, Need, UserNeed
-from flask_sqlalchemy import SQLAlchemy
-from invenio_access import InvenioAccess
-from invenio_access.permissions import system_process
-from invenio_files_rest import InvenioFilesREST
-from invenio_jsonschemas import InvenioJSONSchemas
-from invenio_records_resources import InvenioRecordsResources
-from invenio_records_resources.registry import ServiceRegistry
-from invenio_records_resources.services import FileService
-from invenio_search import InvenioSearch
-# from invenio_app.factory import create_app as _create_app
-
-from invenio_rdm_records import InvenioRDMRecords
-from invenio_rdm_records.services import RDMRecordService
-from invenio_rdm_records.services.config import RDMFileDraftServiceConfig, \
-    RDMRecordServiceConfig
-from invenio_records import InvenioRecords
-
-from invenio_vocabularies import InvenioVocabularies
+from invenio_access.permissions import system_identity
+from invenio_app.factory import create_api as _create_api
 from invenio_vocabularies.proxies import current_service as vocabulary_service
-
-from invenio_swh import InvenioSWH
-from invenio_swh.components import InvenioSWHComponent
-from invenio_swh.views import blueprint
-
-# the primary requirement for the system user's ID is to be unique
-# the IDs of users provided by Invenio-Accounts are positive integers
-# the ID of an AnonymousIdentity from Flask-Principle is None
-# and the documentation for Flask-Principal makes use of strings for some IDs
-system_user_id = "system"
-"""The user ID of the system itself, used in its Identity."""
-
-system_identity = Identity(system_user_id)
-"""Identity used by system processes."""
-
-system_identity.provides.add(system_process)
-
-
-@pytest.fixture(scope="module")
-def celery_config():
-    """Override pytest-invenio fixture.
-
-    TODO: Remove this fixture if you add Celery support.
-    """
-    return {}
+from invenio_vocabularies.records.api import Vocabulary
+from mock import MagicMock
+from invenio_swh.proxies import current_swh_service
 
 
 @pytest.fixture(scope="module")
 def create_app(instance_path, entry_points):
     """Application factory fixture."""
-
-    def app_factory(**config):
-        app = Flask("testapp", instance_path=instance_path)
-
-        app.config.update(
-            **config,
-            # SQLALCHEMY_DATABASE_URI=os.environ.get(
-            #     'SQLALCHEMY_DATABASE_URI', 'sqlite:///' + db_filename),
-            # TESTING=True,
-            JSONSCHEMAS_ENDPOINT="/schemas/",
-            INVENIO_SWH_COLLECTION_IRI="http://swh.invalid/"
-        )
-
-        Babel(app)
-        SQLAlchemy(app)
-
-        InvenioSWH(app)
-        InvenioAccess(app)
-        InvenioRecords(app)
-        InvenioRecordsResources(app)
-        InvenioRDMRecords(app)
-        InvenioJSONSchemas(app)
-        InvenioFilesREST(app)
-        InvenioSearch(app)
-        InvenioVocabularies(app)
-
-        app.register_blueprint(blueprint)
-
-        return app
-
-    return app_factory
+    return _create_api
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def app_config(app_config):
-    app_config['RECORDS_REFRESOLVER_CLS'] = \
-        "invenio_records.resolver.InvenioRefResolver"
-    app_config['RECORDS_REFRESOLVER_STORE'] = \
-        "invenio_jsonschemas.proxies.current_refresolver_store"
-    # Variable not used. We set it to silent warnings
-    app_config['JSONSCHEMAS_HOST'] = 'not-used'
+    """Application configuration fixture."""
+    app_config["SWH_ENABLED"] = True
     return app_config
 
 
-@pytest.fixture()
-def example_record():
-    """An example record as a JSON-like Python structure."""
-    with open(
-        os.path.join(os.path.dirname(__file__), "fixtures", "example-record.json")
-    ) as f:
-        return json.load(f)
-
-
-class RDMWithSWHRecordServiceConfig(RDMRecordServiceConfig):
-    """A record service config with our SWH component."""
-
-    indexer_cls = unittest.mock.Mock
-
-    components = RDMRecordServiceConfig.components
-    if InvenioSWHComponent not in components:
-        components = [
-            *RDMRecordServiceConfig.components,
-            InvenioSWHComponent,
-        ]
+RunningApp = namedtuple(
+    "RunningApp",
+    [
+        "app",
+        "superuser_identity",
+        "location",
+        "cache",
+        "resource_type_v",
+    ],
+)
 
 
 @pytest.fixture
-def rdm_with_swh_record_service():
-    """Return a record service with an SWH component plugged in."""
-    return RDMRecordService(config=RDMWithSWHRecordServiceConfig)
+def running_app(
+    app,
+    superuser_identity,
+    location,
+    cache,
+    resource_type_v,
+):
+    """This fixture provides an app with the typically needed db data loaded.
+
+    All of these fixtures are often needed together, so collecting them
+    under a semantic umbrella makes sense.
+    """
+    return RunningApp(
+        app,
+        superuser_identity,
+        location,
+        cache,
+        resource_type_v,
+    )
+
+
+@pytest.fixture(scope="function")
+def minimal_record(users):
+    """Minimal record data as dict coming from the external world."""
+    return {
+        "access": {
+            "record": "public",
+            "files": "public",
+        },
+        "files": {"enabled": False},  # Most tests don't care about file upload
+        "metadata": {
+            "publication_date": "2020-06-01",
+            "resource_type": {
+                "id": "image-photo",
+            },
+            # Technically not required
+            "creators": [
+                {
+                    "person_or_org": {
+                        "type": "personal",
+                        "name": "Doe, John",
+                        "given_name": "John Doe",
+                        "family_name": "Doe",
+                    }
+                }
+            ],
+            "title": "A Romans story",
+        },
+    }
 
 
 @pytest.fixture(scope="module")
@@ -155,42 +113,56 @@ def identity_simple():
 @pytest.fixture(scope="module")
 def resource_type_type(app):
     """Resource type vocabulary type."""
-    return vocabulary_service.create_type(
-        system_identity, "resource_types", "rsrct")
+    return vocabulary_service.create_type(system_identity, "resource_types", "rsrct")
 
 
 @pytest.fixture(scope="module")
-def resource_type_software(app, resource_type_type):
+def resource_type_v(app, resource_type_type):
     """Resource type vocabulary record."""
-    return vocabulary_service.create(system_identity, {
-        "id": "software",
-        "props": {
-            "csl": "graphic",
-            "datacite_general": "Image",
-            "datacite_type": "Photo",
-            "openaire_resourceType": "25",
-            "openaire_type": "dataset",
-            "schema.org": "https://schema.org/Photograph",
-            "subtype": "image-photo",
-            "subtype_name": "Photo",
-            "type": "image",
-            "type_icon": "chart bar outline",
-            "type_name": "Image",
+    vocab = vocabulary_service.create(
+        system_identity,
+        {
+            "id": "software",
+            "icon": "code",
+            "type": "resourcetypes",
+            "props": {
+                "csl": "software",
+                "datacite_general": "Software",
+                "datacite_type": "",
+                "openaire_resourceType": "0029",
+                "openaire_type": "software",
+                "eurepo": "info:eu-repo/semantics/other",
+                "schema.org": "https://schema.org/SoftwareSourceCode",
+                "subtype": "",
+                "type": "software",
+            },
+            "title": {"en": "Software", "de": "Software"},
+            "tags": ["depositable", "linkable"],
         },
-        "title": {
-            "en": "Software"
-        },
-        "type": "resource_types"
-    })
+    )
+    Vocabulary.index.refresh()
+
+    return vocab
 
 
-@pytest.yield_fixture()
-def files_service(app):
-    files_service = FileService(RDMFileDraftServiceConfig)
-    registry: ServiceRegistry = app.extensions["invenio-records-resources"].registry
-    # Let's pick a random service_id…
-    registry.register(files_service, str(uuid.uuid4()))
-    try:
-        yield files_service
-    finally:
-        del registry._services[registry.get_service_id(files_service)]
+@pytest.fixture(scope="module")
+def swh_service(mock_swh_client):
+    """Mocks a SWH service."""
+    client = mock_swh_client()
+    current_swh_service
+    monkeypatch.setattr("invenio_swh.service.SWHService", MagicMock())
+    pass
+
+
+@pytest.fixture(scope="module")
+def mock_swh_client():
+    def _request(*args, **kwargs):
+        response = MagicMock()
+        response.status = 200
+        content = {}
+        return response, content
+
+    mock_client = MagicMock()
+    mock_client.h.request = MagicMock(side_effect=_request)
+
+    yield mock_client

@@ -8,43 +8,19 @@
 
 """Support for onward deposit of software artifacts to Software Heritage"""
 
-import typing
-from flask import current_app
-
 import sword2
-from invenio_records import Record
+from invenio_rdm_records.contrib.codemeta.signals import post_publish_signal
+
+from invenio_swh.client import SWHCLient
+from invenio_swh.controller import SWHController
+from invenio_swh.service import SWHService
+from invenio_swh.signals import post_publish_receiver
+
 from . import config
-from .enum import ExtDataType
-from .metadata import SWHMetadata
 
 
 class InvenioSWH(object):
     """invenio-swh extension."""
-
-    extension_name = "invenio-swh"
-
-    url_config_key = "INVENIO_SWH_SERVICE_DOCUMENT"
-    collection_name_config_key = "INVENIO_SWH_COLLECTION_NAME"
-    collection_iri_config_key = "INVENIO_SWH_COLLECTION_IRI"
-    username_config_key = "INVENIO_SWH_USERNAME"
-    password_config_key = "INVENIO_SWH_PASSWORD"
-
-    detail_side_bar_template_name = (
-        "invenio_swh/records/details/side_bar/invenio_swh.html"
-    )
-
-    # This is the mapping from Atom status elements to elements in the user-facing
-    # extension data
-    status_mapping = {
-        "sd:deposit_id": "depositId",
-        "sd:deposit_status": "status",
-        "sd:deposit_swh_id": "swhidCore",
-        "sd:deposit_swh_id_context": "swhid",
-        "sd:deposit_status_detail": "statusDetail",
-        "sd:deposit_origin_url": "originUrl",
-    }
-
-    metadata_cls: typing.Type[SWHMetadata] = SWHMetadata
 
     def __init__(self, app=None):
         """Extension initialization."""
@@ -52,84 +28,46 @@ class InvenioSWH(object):
             self.init_app(app)
 
     def init_app(self, app):
-        """Flask application initialization."""
+        """Flask application initialization.
+
+        The extension is only registered if it is enabled and configured.
+        """
         self.init_config(app)
-        app.extensions[self.extension_name] = self
+        if self.is_enabled(app) and self.is_configured(app):
+            self.init_signals()
+            self.init_service(app)
+            app.extensions["invenio-swh"] = self
 
-        from invenio_rdm_records.services import RDMRecordServiceConfig
-        from .components import InvenioSWHComponent
+    def init_service(self, app):
+        sword_client = sword2.Connection(
+            service_document_iri=app.config["SWH_SERVICE_DOCUMENT"],
+            user_name=app.config["SWH_USERNAME"],
+            user_pass=app.config["SWH_PASSWORD"],
+        )
+        client = SWHCLient(sword_client, app.config["SWH_COLLECTION_IRI"])
+        controller = SWHController(client)
+        self.service = SWHService(controller)
 
-        # Inject our service component
-        if InvenioSWHComponent not in RDMRecordServiceConfig.components:
-            RDMRecordServiceConfig.components = [
-                *RDMRecordServiceConfig.components,
-                InvenioSWHComponent,
-            ]
-
-        # Inject our record detail sidebar template
-        if (
-            "APP_RDM_DETAIL_SIDE_BAR_TEMPLATES" in app.config
-            and self.detail_side_bar_template_name
-            not in app.config["APP_RDM_DETAIL_SIDE_BAR_TEMPLATES"]
-        ):
-            app.config["APP_RDM_DETAIL_SIDE_BAR_TEMPLATES"].append(
-                self.detail_side_bar_template_name
-            )
+    def init_signals(self):
+        """Initialize signals."""
+        post_publish_signal.connect(post_publish_receiver)
 
     def init_config(self, app):
         """Initialize configuration."""
-        # Use theme's base template if theme is installed
-        if "BASE_TEMPLATE" in app.config:
-            app.config.setdefault(
-                "INVENIO_SWH_BASE_TEMPLATE",
-                app.config["BASE_TEMPLATE"],
-            )
         for k in dir(config):
-            if k.startswith("INVENIO_SWH_"):
+            if k.startswith("SWH_"):
                 app.config.setdefault(k, getattr(config, k))
 
-    @property
-    def sword_client(self) -> sword2.Connection:
-        if self.is_configured:
-            return sword2.Connection(
-                service_document_iri=current_app.config[self.url_config_key],
-                user_name=current_app.config[self.username_config_key],
-                user_pass=current_app.config[self.password_config_key],
-            )
+    def is_enabled(self, app):
+        """Return True whether the extension is enabled."""
+        return app.config.get("SWH_ENABLED")
 
-    @property
-    def collection_name(self) -> str:
-        return current_app.config[self.collection_name_config_key]
-
-    @property
-    def collection_iri(self) -> str:
-        return current_app.config[self.collection_iri_config_key]
-
-    @property
-    def is_configured(self) -> bool:
+    def is_configured(self, app) -> bool:
+        """Return whther the extension is properly configured."""
         return bool(
-            current_app.config.get(self.url_config_key)
-            and current_app.config.get(self.collection_iri_config_key)
-            and current_app.config.get(self.username_config_key)
-            and current_app.config.get(self.password_config_key)
+            app.config.get("SWH_SERVICE_DOCUMENT")
+            and app.config.get("SWH_USERNAME")
+            and app.config.get("SWH_PASSWORD")
+            and app.config.get("SWH_ACCEPTED_EXTENSIONS")
+            and app.config.get("SWH_ACCEPTED_RECORD_TYPES")
         )
-
-    @property
-    def metadata(self) -> SWHMetadata:
-        return self.metadata_cls(self)
-
-    def get_ext_data(self, record: Record, type: ExtDataType) -> dict:
-        return record.get("ext", {}).get(self._ext_data_key(type), {})
-
-    def set_ext_data(self, record: Record, type: ExtDataType, extension_data) -> None:
-        if extension_data:
-            if "ext" not in record:
-                record["ext"] = {}
-            record["ext"][self._ext_data_key(type)] = extension_data
-        elif "ext" in record:
-            record["ext"].pop(self._ext_data_key(type), None)
-            if not record["ext"]:
-                del record["ext"]
-
-    def _ext_data_key(self, type: ExtDataType) -> str:
-        return type.value

@@ -23,18 +23,20 @@ def test_version():
 def test_init():
     """Test extension initialization."""
     app = Flask("testapp")
+    app.config.update(
+        {
+            "SWH_SERVICE_DOCUMENT": "test",
+            "SWH_USERNAME": "test",
+            "SWH_PASSWORD": "test",
+            "SWH_ACCEPTED_EXTENSIONS": "test",
+            "SWH_ACCEPTED_RECORD_TYPES": "test",
+            "SWH_ENABLED": "test",
+        }
+    )
     ext = InvenioSWH(app)
     assert "invenio-swh" in app.extensions
 
+    # Extension not configured, therefore not initialized.
     app = Flask("testapp")
-    ext = InvenioSWH()
+    ext = InvenioSWH(app)
     assert "invenio-swh" not in app.extensions
-    ext.init_app(app)
-    assert "invenio-swh" in app.extensions
-
-
-def test_view(base_client):
-    """Test view."""
-    res = base_client.get("/")
-    assert res.status_code == 200
-    assert "Welcome to invenio-swh" in str(res.data)
