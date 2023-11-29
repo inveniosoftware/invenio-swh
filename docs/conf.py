@@ -46,9 +46,9 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"invenio-swh"
-copyright = u"2020, CERN, Cottage Labs LLP."
-author = u"Cottage Labs LLP."
+project = "invenio-swh"
+copyright = "2020, CERN, Cottage Labs LLP."
+author = "Cottage Labs LLP."
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -252,8 +252,8 @@ latex_documents = [
     (
         master_doc,
         "invenio-swh.tex",
-        u"invenio-swh Documentation",
-        u"Cottage Labs LLP",
+        "invenio-swh Documentation",
+        "Cottage Labs LLP",
         "manual",
     ),
 ]
@@ -283,9 +283,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, "invenio-swh", u"invenio-swh Documentation", [author], 1)
-]
+man_pages = [(master_doc, "invenio-swh", "invenio-swh Documentation", [author], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -300,7 +298,7 @@ texinfo_documents = [
     (
         master_doc,
         "invenio-swh",
-        u"invenio-swh Documentation",
+        "invenio-swh Documentation",
         author,
         "invenio-swh",
         "Support for onward deposit of software artifacts to Software Heritage",

@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2023 CERN.
+#
+# Invenio-swh is free software; you can redistribute it and/or modify
+# it under the terms of the MIT License; see LICENSE file for more details.
+"""Celery tasks for Invenio / Software Heritage integration."""
 from celery.app import shared_task
 from flask import current_app
 from invenio_access.permissions import system_identity

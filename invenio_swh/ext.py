@@ -6,10 +6,10 @@
 # invenio-swh is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
 
-"""Support for onward deposit of software artifacts to Software Heritage"""
+"""Support for onward deposit of software artifacts to Software Heritage."""
 
 import sword2
-from invenio_rdm_records.contrib.codemeta.signals import post_publish_signal
+from invenio_rdm_records.services.signals import post_publish_signal
 
 from invenio_swh.client import SWHCLient
 from invenio_swh.controller import SWHController
@@ -39,6 +39,10 @@ class InvenioSWH(object):
             app.extensions["invenio-swh"] = self
 
     def init_service(self, app):
+        """Initialize the service.
+
+        Both the swh controller and client are injected into the service.
+        """
         sword_client = sword2.Connection(
             service_document_iri=app.config["SWH_SERVICE_DOCUMENT"],
             user_name=app.config["SWH_USERNAME"],

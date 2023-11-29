@@ -1,12 +1,14 @@
-class InvenioSWHException(Exception):
-    annotate_record = False
-    """Whether to annotate a record when this exception is raised.
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2023 CERN.
+#
+# Invenio-swh is free software; you can redistribute it and/or modify
+# it under the terms of the MIT License; see LICENSE file for more details.
+"""Invenio / Software Heritage errors."""
 
-    Errors may occur during processing which should be fed back to the user. To support
-    this, code that performs actions should set `record['ext']['swh']['error']` to the
-    string value of the exception if `annotate_record` is True. If no exceptions occur
-    during an operation, this key should be cleared.
-    """
+
+class InvenioSWHException(Exception):
+    """Base exception for Invenio-SWH."""
 
 
 class InvalidRecord(InvenioSWHException):

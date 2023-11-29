@@ -9,20 +9,20 @@
 from collections.abc import Iterable
 
 from flask import current_app
-from invenio_rdm_records.proxies import current_rdm_records_service as record_service
 from invenio_records_resources.services.uow import RecordCommitOp, unit_of_work
 
 from invenio_swh.api import SWHDeposit
 from invenio_swh.controller import SWHController
-from invenio_swh.errors import DepositFailed, InvalidRecord
+from invenio_swh.errors import InvalidRecord
 from invenio_swh.models import SWHDepositStatus
 from invenio_swh.schema import SWHCodemetaSchema
 
 
 class SWHDepositResult(object):
-    """Single WHDeposit result."""
+    """Single SWHDeposit result."""
 
     def __init__(self, deposit: SWHDeposit) -> None:
+        """Constructor."""
         self.deposit = deposit
 
 
@@ -87,10 +87,12 @@ class SWHService(object):
         return deposit
 
     def get_record_deposit(self, record_id):
+        """Returns the deposit associated to a given record."""
         deposit = self.record_cls.get_record_deposit(record_id)
         return self.result_item(deposit)
 
     def read(self, id_) -> SWHDepositResult:
+        """Reads a deposit given its id."""
         deposit = self.record_cls.get(id_)
         return self.result_item(deposit)
 
@@ -116,12 +118,20 @@ class SWHService(object):
 
     @unit_of_work()
     def complete(self, id_: int, uow=None):
+        """
+        Complete a deposit.
+
+        :param id_: The ID of the deposit to complete.
+        :type id_: int
+        :param uow: The unit of work.
+        :type uow: Union[UnitOfWork, None]
+        :return: The completed deposit.
+        :rtype: Deposit
+        :raises DepositFailed: If the deposit has already failed.
+        """
         try:
             deposit_res = self.read(id_)
             deposit = deposit_res.deposit
-            if deposit.status == SWHDepositStatus.FAILED:
-                raise DepositFailed("Deposit can't be completed, already failed.")
-
             self.swh_controller.complete_deposit(deposit.id)
             deposit.model.status = SWHDepositStatus.WAITING
         except Exception as exc:
@@ -132,13 +142,28 @@ class SWHService(object):
 
     @unit_of_work()
     def upload_files(self, id_, files, uow=None):
+        """
+        Uploads files to a deposit.
+
+        ``files``` are the representation of the files to be uploaded. It is an API instance of the RDM record files.
+
+        The files are first normalized by the service, assuring that the file(s) to be sent are compatible with the current
+        implementation of the integration.
+
+        :param id_: The ID of the deposit.
+        :type id_: int
+        :param files: The files to be uploaded.
+        :type files: RecordFiles
+        :param uow: The unit of work.
+        :type uow: object, optional
+        :return: The updated deposit.
+        :rtype: object
+        """
         try:
             deposit_res = self.read(id_)
             deposit = deposit_res.deposit
-            if deposit.status == SWHDepositStatus.FAILED:
-                raise DepositFailed("Deposit can't receive new files, already failed.")
-
-            file = self._normalize_files(files.entries.values())
+            self.validate_files(files)
+            file = self._get_first_file(files)
             fp = file.get_stream("rb")
             file_metadata = file.file.dumps()
             file_metadata["filename"] = file.file.key
@@ -151,6 +176,20 @@ class SWHService(object):
 
     @unit_of_work()
     def update_swhid(self, id_: int, swhid: str, uow=None) -> None:
+        """
+        Update the SWHID and status of a deposit.
+
+        The deposit is considered to be "SUCCESS" if the SWHID is successfully updated.
+
+        :param id_: The ID of the deposit.
+        :type id_: int
+        :param swhid: The new SWHID to be assigned to the deposit.
+        :type swhid: str
+        :param uow: The unit of work to register the operation with. (optional)
+        :type uow: object, default=None
+        :return: The updated deposit.
+        :rtype: object
+        """
         try:
             deposit_res = self.read(id_)
             deposit = deposit_res.deposit
@@ -165,6 +204,7 @@ class SWHService(object):
 
     @unit_of_work()
     def _handle_status_update(self, deposit: SWHDeposit, status: str, uow=None):
+        """Handles a status update of the deposit."""
         internal_status = self.SWH_STATUS_MAP.get(status)
         if not internal_status:
             current_app.logger.warning(
@@ -175,42 +215,29 @@ class SWHService(object):
             deposit.model.status = internal_status
             uow.register(RecordCommitOp(deposit))
 
-    def _normalize_files(self, files):
-        # Assumes only file for now
-        if not isinstance(files, list) and isinstance(files, Iterable):
-            files = list(files)
-
-        # TODO only accepts one file for now
-        return files[0]
+    def _get_first_file(self, files_manager):
+        fname = list(files_manager.entries.keys())[0]
+        fdata = files_manager.entries[fname]
+        return fdata
 
     def validate_record(self, record):
-        """Checks whether the record can be sent to Software Heritage."""
+        """Checks whether the record can be sent to Software Heritage.
+
+        Checks the following:
+        - Record type is of a valid one
+        - Record files are valid
+        - Record is fully open
+
+        :param record: The record to be validated
+        :type record: RDMRecord
+        """
         # Check resource type
         resource_type = record.get("metadata", {}).get("resource_type", {}).get("id")
         valid_types = current_app.config["SWH_ACCEPTED_RECORD_TYPES"]
         if not resource_type in valid_types:
             raise InvalidRecord(f"Record is not of valid type: {str(valid_types)}")
 
-        # Check files
-        if not len(record.files) == 1:
-            current_app.logger.warning(
-                "Software Heritage integration only enabled for one file."
-            )
-            raise InvalidRecord("Integration only accepts one file.")
-
-        # Check file extension
-        fname = list(record.files.entries.keys())[0]
-        fdata = record.files.entries[fname]
-
-        valid_extensions = current_app.config["SWH_ACCEPTED_EXTENSIONS"]
-
-        if not fdata.file.ext in valid_extensions:
-            raise InvalidRecord(f"File is not of valid type: {str(valid_extensions)}")
-
-        # Check file size
-        max_size = current_app.config["SWH_MAX_FILE_SIZE"]
-        if fdata.file.size > max_size:
-            raise InvalidRecord(f"File is too big: {max_size}")
+        self.validate_files(record.files)
 
         # Check access rights
         is_open = (
@@ -223,3 +250,33 @@ class SWHService(object):
             )
 
         return True
+
+    def validate_files(self, files):
+        """Validates files to be sent to Software Heritage.
+
+        Checks the following:
+        - Record only has one file and it is of a valid extension
+        - Record file is not too big
+        """
+        # Check number of files
+        if not len(files) == 1:
+            current_app.logger.warning(
+                "Software Heritage integration only enabled for one file."
+            )
+            raise InvalidRecord("Integration only accepts one file.")
+
+        # Check file extension
+        fname = list(files.entries.keys())[0]
+        fdata = files.entries[fname]
+
+        valid_extensions = current_app.config["SWH_ACCEPTED_EXTENSIONS"]
+
+        if not fdata.file.ext in valid_extensions:
+            raise InvalidRecord(f"File is not of valid type: {str(valid_extensions)}")
+
+        # Check file size
+        max_size = current_app.config["SWH_MAX_FILE_SIZE"]
+        if fdata.file.size > max_size:
+            raise InvalidRecord(f"File is too big: {max_size}")
+
+        return fdata

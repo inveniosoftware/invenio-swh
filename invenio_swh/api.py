@@ -31,14 +31,14 @@ class SWHDeposit(object):
 
     @classmethod
     def create(cls, object_uuid):
-        """Create a new deposit."""
+        """Create a new swh deposit."""
         with db.session.no_autoflush:
             deposit = cls.model_cls(object_uuid=object_uuid)
             return cls(deposit)
 
     @classmethod
     def get(cls, id_):
-        """Get a deposit by id."""
+        """Get a swh deposit by id."""
         with db.session.no_autoflush:
             query = cls.model_cls.query.filter_by(swh_deposit_id=id_)
             deposit = query.one()
@@ -46,13 +46,14 @@ class SWHDeposit(object):
 
     @classmethod
     def get_by_status(cls, status):
-        """Get a deposit by status."""
+        """Get a swh deposit by status."""
         with db.session.no_autoflush:
             query = cls.model_cls.query.filter_by(status=status)
             return [cls(deposit) for deposit in query.all()]
 
     @classmethod
     def get_record_deposit(cls, record_id):
+        """Get a local swh deposit by record id."""
         with db.session.no_autoflush:
             deposit = cls.model_cls.query.filter_by(object_uuid=record_id).one_or_none()
             return cls(deposit)
@@ -64,17 +65,17 @@ class SWHDeposit(object):
 
     @property
     def id(self):
-        """Returns the remote id of the deposit."""
+        """Returns the remote id of the swh deposit."""
         return self.model.swh_deposit_id
 
     @property
     def swhid(self):
-        """Returns the software hash id of the deposit."""
+        """Returns the software hash id of the swh deposit."""
         return self.model.swhid
 
     @property
     def status(self):
-        """Returns the status of the deposit."""
+        """Returns the status of the swh deposit."""
         return self.model.status
 
     def commit(self):
@@ -83,5 +84,6 @@ class SWHDeposit(object):
             return
 
         with db.session.begin_nested():
-            db.session.merge(self.model)
+            res = db.session.merge(self.model)
+            self.model = res
         return self

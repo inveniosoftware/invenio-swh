@@ -35,6 +35,8 @@ class SWHDepositStatus(Enum):
 
 
 class SWHDepositModel(db.Model, Timestamp):
+    """Model for a Software Heritage deposit."""
+
     # Enables SQLAlchemy version counter (not the same as SQLAlchemy-Continuum)
 
     __tablename__ = "swh_deposit"

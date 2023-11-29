@@ -6,10 +6,11 @@
 # it under the terms of the MIT License; see LICENSE file for more details.
 """Serializer for Invenio-SWH."""
 
-from flask_resources import MarshmallowSerializer
-from invenio_swh.schema import SWHCodemetaSchema
-from lxml import etree
 import xmltodict
+from flask_resources import MarshmallowSerializer
+from lxml import etree
+
+from invenio_swh.schema import SWHCodemetaSchema
 
 
 class BaseFormatter:
@@ -142,7 +143,6 @@ class SoftwareHeritageXMLSerializer(MarshmallowSerializer):
 
     def __init__(self, namespaces=None, **options):
         """Constructor."""
-
         self.namespaces = namespaces or self.default_namespaces
         super().__init__(
             format_serializer_cls=XMLFormatter,

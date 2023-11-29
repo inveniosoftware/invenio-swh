@@ -120,7 +120,7 @@ class SWHCLient(object):
         headers["In-Progress"] = "false"
         headers["Content-Length"] = "0"
         resp, content = self.client.h.request(
-            self.se_iri(deposit_id), method="POST", headers=headers
+            self.se_iri(deposit_id), "POST", headers=headers
         )
         if resp.status >= 300:
             raise ClientException(
@@ -130,7 +130,7 @@ class SWHCLient(object):
 
     def get_deposit_status(self, deposit_id: int) -> dict:
         """Returns the status of a deposit."""
-        resp, content = self.client.h.request(self.status_iri(deposit_id), method="GET")
+        resp, content = self.client.h.request(self.status_iri(deposit_id), "GET")
         return self._parse_response(content)
 
     def _parse_response(self, response_obj: bytes) -> dict:
