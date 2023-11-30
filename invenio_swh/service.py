@@ -80,7 +80,7 @@ class SWHService(object):
 
         metadata = self.schema.dump(record)
         swh_deposit = self.swh_controller.create_deposit(metadata)
-        deposit.model.swh_deposit_id = int(swh_deposit["deposit_id"])
+        deposit.model.swh_deposit_id = str(swh_deposit["deposit_id"])
         deposit.model.status = SWHDepositStatus.CREATED
 
         uow.register(RecordCommitOp(deposit))

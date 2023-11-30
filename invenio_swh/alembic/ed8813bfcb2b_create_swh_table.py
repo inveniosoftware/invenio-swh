@@ -30,7 +30,7 @@ def upgrade():
             "object_uuid", sqlalchemy_utils.types.uuid.UUIDType(), nullable=False
         ),
         sa.Column("swhid", sa.String(length=255), nullable=True),
-        sa.Column("swh_deposit_id", sa.Integer(), nullable=True),
+        sa.Column("swh_deposit_id", sa.String(), nullable=True),
         sa.Column("status", sa.CHAR(length=1), nullable=False),
         sa.PrimaryKeyConstraint("object_uuid", name=op.f("pk_swh_deposit")),
     )

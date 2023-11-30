@@ -40,7 +40,7 @@ class SWHDeposit(object):
     def get(cls, id_):
         """Get a swh deposit by id."""
         with db.session.no_autoflush:
-            query = cls.model_cls.query.filter_by(swh_deposit_id=id_)
+            query = cls.model_cls.query.filter_by(swh_deposit_id=str(id_))
             deposit = query.one()
             return cls(deposit)
 

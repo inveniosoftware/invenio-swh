@@ -52,7 +52,7 @@ class SWHDepositModel(db.Model, Timestamp):
     swhid = db.Column(db.String(255), nullable=True)
     """Software Hash ID."""
 
-    swh_deposit_id = db.Column(db.Integer, nullable=True)
+    swh_deposit_id = db.Column(db.String, nullable=True)
     """Software Heritage deposit id."""
 
     status = db.Column(

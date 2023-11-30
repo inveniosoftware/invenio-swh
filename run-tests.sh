@@ -3,7 +3,7 @@
 #
 # Copyright (C) 2023 CERN.
 #
-# Invenio-Github is free software; you can redistribute it and/or modify it
+# Invenio-SWH is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
 
 # Usage:
