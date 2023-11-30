@@ -10,8 +10,11 @@ from invenio_swh.client import SWHCLient
 from invenio_swh.errors import DeserializeException
 
 
-class SWHController(object):
+class SWHController:
+    """Software Heritage controller."""
+
     def __init__(self, client: SWHCLient) -> None:
+        """Constructor."""
         self.client = client
 
     def _parse_response(self, data: dict) -> dict:
@@ -30,17 +33,21 @@ class SWHController(object):
         return res
 
     def fetch_deposit_status(self, deposit_id: int) -> dict:
+        """Fetch the status of a deposit."""
         res = self.client.get_deposit_status(deposit_id)
         return self._parse_response(res)
 
     def create_deposit(self, metadata: dict) -> dict:
+        """Create a deposit."""
         res = self.client.create_deposit(metadata)
         return self._parse_response(res)
 
     def complete_deposit(self, deposit_id: int) -> dict:
+        """Complete a deposit."""
         res = self.client.complete_deposit(deposit_id)
         return self._parse_response(res)
 
     def update_deposit_files(self, deposit_id: int, files, files_metadata) -> dict:
+        """Update a deposit's files."""
         res = self.client.update_deposit_files(deposit_id, files, files_metadata)
         return self._parse_response(res)

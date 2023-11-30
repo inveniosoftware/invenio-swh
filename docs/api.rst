@@ -11,9 +11,3 @@ API Docs
 
 .. automodule:: invenio_swh.ext
    :members:
-
-Views
------
-
-.. automodule:: invenio_swh.views
-   :members:
