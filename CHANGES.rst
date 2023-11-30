@@ -8,6 +8,10 @@
 Changes
 =======
 
+Version 0.2.1 (released 2023-11-30)
+
+- ci: update PyPI release
+
 Version 0.2.0 (released 2023-11-30)
 
 - Initial public release.
