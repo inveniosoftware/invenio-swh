@@ -29,7 +29,7 @@ from invenio_swh.client import SWHCLient
 
 @pytest.fixture(scope="module")
 def zip_file():
-    """Github repository ZIP fixture."""
+    """ZIP fixture."""
     memfile = BytesIO()
     zipfile = ZipFile(memfile, "w")
     zipfile.writestr("test.txt", "hello world")
@@ -220,6 +220,7 @@ def resource_type_v(app, resource_type_type):
 @pytest.fixture(scope="module")
 def mock_client():
     """Mock client."""
+
     def _request(*args, **kwargs):
         assert len(args) >= 2
         response = MagicMock()

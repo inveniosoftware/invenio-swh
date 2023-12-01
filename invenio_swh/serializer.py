@@ -44,7 +44,14 @@ class BaseFormatter:
 class XMLFormatter(BaseFormatter):
     """XMLFormatter is a class that provides methods for serializing objects to XML format."""
 
-    _namespaces = None
+    def __init__(self, namespaces=None, **kwargs):
+        """Initialize the XMLFormatter.
+
+        :param namespaces: A dictionary of namespaces to be used for XML serialization. Defaults to None.
+        :type namespaces: dict, optional
+        """
+        self._namespaces = namespaces
+        super().__init__(**kwargs)
 
     @property
     def namespaces(self):
@@ -54,16 +61,6 @@ class XMLFormatter(BaseFormatter):
         :rtype: dict
         """
         return self._namespaces
-
-    def __init__(self, **kwargs):
-        """Initialize the XMLFormatter.
-
-        :param namespaces: A dictionary of namespaces to be used for XML serialization. Defaults to None.
-        :type namespaces: dict, optional
-        """
-        super().__init__()
-        if "namespaces" in kwargs:
-            self._namespaces = kwargs["namespaces"]
 
     def serialize_object(self, obj) -> bytes:
         """Serialize an object to XML format.
@@ -133,15 +130,12 @@ class XMLFormatter(BaseFormatter):
 class SoftwareHeritageXMLSerializer(MarshmallowSerializer):
     """Serializer for Software Heritage XML serialization."""
 
-    @property
-    def default_namespaces(self):
-        """Default namespaces for Software Heritage serialization."""
-        return {
-            "default": "https://doi.org/10.5063/SCHEMA/CODEMETA-2.0",
-            "atom": "http://www.w3.org/2005/Atom",
-        }
+    default_namespaces = {
+        "default": "https://doi.org/10.5063/SCHEMA/CODEMETA-2.0",
+        "atom": "http://www.w3.org/2005/Atom",
+    }
 
-    def __init__(self, namespaces=None, **options):
+    def __init__(self, namespaces=None, **kwargs):
         """Constructor."""
         self.namespaces = namespaces or self.default_namespaces
         super().__init__(
@@ -149,4 +143,5 @@ class SoftwareHeritageXMLSerializer(MarshmallowSerializer):
             object_schema_cls=SWHCodemetaSchema,
             # Passed as kwargs to the formatter
             namespaces=self.namespaces,
+            **kwargs,
         )

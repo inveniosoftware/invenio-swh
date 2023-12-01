@@ -11,7 +11,7 @@ from invenio_db import db
 from invenio_swh.models import SWHDepositModel
 
 
-class SWHDeposit(object):
+class SWHDeposit:
     """API abstraction of a Software Heritage deposit.
 
     This class provides an abstraction layer for interacting with Software Heritage deposits.
