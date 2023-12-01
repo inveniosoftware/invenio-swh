@@ -9,6 +9,7 @@
 """Support for onward deposit of software artifacts to Software Heritage."""
 
 import sword2
+from flask.blueprints import Blueprint
 from invenio_rdm_records.services.signals import post_publish_signal
 
 from invenio_swh.client import SWHCLient
@@ -17,6 +18,12 @@ from invenio_swh.service import SWHService
 from invenio_swh.signals import post_publish_receiver
 
 from . import config
+
+blueprint = Blueprint(
+    "invenio_swh",
+    __name__,
+    template_folder="templates",
+)
 
 
 class InvenioSWH(object):
@@ -37,6 +44,7 @@ class InvenioSWH(object):
             self.init_signals()
             self.init_service(app)
             app.extensions["invenio-swh"] = self
+            app.register_blueprint(blueprint)
 
     def init_service(self, app):
         """Initialize the service.

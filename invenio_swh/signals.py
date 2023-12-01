@@ -9,7 +9,6 @@
 from invenio_swh.tasks import process_published_record
 
 
-def post_publish_receiver(sender, **kwargs):
+def post_publish_receiver(sender, pid=None, **kwargs):
     """Signal receiver for post-publish signal."""
-    pid = kwargs["pid"]
     process_published_record.si(pid).apply(throw=True)
