@@ -5,13 +5,13 @@
   it under the terms of the MIT License; see LICENSE file for more details.
 #}
 
-<li class="item">
+<li class="item flex">
 
   {% if resource.content.icon %}
     <img class="ui image" src="{{ resource.content.icon }}" alt="Software Heritage icon" width="32">
   {% endif %}
 
-  <div class="content">
+  <div class="content truncated">
     <a
       class="header"
       href="{{resource.content.url}}"
@@ -21,9 +21,9 @@
     </a>
 
     {% if resource.content.subtitle %}
-      <span class="description" data-tooltip="{{resource.content.subtitle}}">
-        {{ resource.content.subtitle | truncate(25, true, end='...') }}
-      </span>
+      <p class="full-width truncated">
+        {{ resource.content.subtitle }}
+      </p>
     {%- endif -%}
 
   </div>
