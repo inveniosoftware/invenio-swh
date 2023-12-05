@@ -32,8 +32,6 @@ class SWHCodemetaSchema(CodemetaSchema):
             "description",
             "version",
             "codeRepository",
-            "runtimePlatform",
             "programmingLanguage",
-            "operatingSystem",
             "developmentStatus",
         )
