@@ -8,6 +8,11 @@
 Changes
 =======
 
+Version 0.2.2 (released 2023-12-13)
+
+- ui: added swh external resource template.
+- schema: removed open terms for software fields
+
 Version 0.2.1 (released 2023-11-30)
 
 - ci: update PyPI release
