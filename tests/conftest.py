@@ -53,12 +53,12 @@ def app_config(app_config):
     app_config["SWH_USERNAME"] = "test"
     app_config["SWH_PASSWORD"] = "test"
     app_config["JSONSCHEMAS_HOST"] = "not-used"
-    app_config[
-        "RECORDS_REFRESOLVER_CLS"
-    ] = "invenio_records.resolver.InvenioRefResolver"
-    app_config[
-        "RECORDS_REFRESOLVER_STORE"
-    ] = "invenio_jsonschemas.proxies.current_refresolver_store"
+    app_config["RECORDS_REFRESOLVER_CLS"] = (
+        "invenio_records.resolver.InvenioRefResolver"
+    )
+    app_config["RECORDS_REFRESOLVER_STORE"] = (
+        "invenio_jsonschemas.proxies.current_refresolver_store"
+    )
 
     # Needed for files to work
     app_config["FILES_REST_STORAGE_CLASS_LIST"] = {
