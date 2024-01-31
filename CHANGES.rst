@@ -8,6 +8,10 @@
 Changes
 =======
 
+Version 0.4.0 (released 2024-01-31)
+
+- installation: bump dependencies
+
 Version 0.3.0 (released 2024-01-31)
 
 - installation: bump invenio-rdm-records
