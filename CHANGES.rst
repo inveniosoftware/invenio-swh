@@ -8,6 +8,10 @@
 Changes
 =======
 
+Version 0.6.0 (released 2024-02-20)
+
+- installation: bump invenio-rdm-records
+
 Version 0.5.0 (released 2024-02-16)
 
 - installation: bump invenio-rdm-records
