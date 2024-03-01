@@ -8,6 +8,10 @@
 Changes
 =======
 
+Version 0.7.0 (released 2024-03-01)
+
+- installation: lower-pin sword2
+
 Version 0.6.0 (released 2024-02-20)
 
 - installation: bump invenio-rdm-records
