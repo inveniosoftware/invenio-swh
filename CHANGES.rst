@@ -8,6 +8,10 @@
 Changes
 =======
 
+Version 0.9.0 (released 2024-04-11)
+
+- installation: remove upper bounds from dependencies
+
 Version 0.8.0 (released 2024-04-03)
 
 - installation: bump invenio-rdm-records to v9
