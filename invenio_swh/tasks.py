@@ -6,22 +6,18 @@
 # it under the terms of the MIT License; see LICENSE file for more details.
 """Celery tasks for Invenio / Software Heritage integration."""
 from celery.app import shared_task
-from flask import current_app
 from invenio_access.permissions import system_identity
 from invenio_rdm_records.proxies import current_rdm_records_service as record_service
 from invenio_records_resources.services.uow import UnitOfWork
-from werkzeug.local import LocalProxy
 
 from invenio_swh.errors import DepositWaiting, InvalidRecord
 from invenio_swh.models import SWHDepositStatus
 from invenio_swh.proxies import current_swh_service as service
 
-rate_limit = LocalProxy(lambda: current_app.config["SWH_RATE_LIMIT"])
 
-
-@shared_task(max_retries=3, rate_limit=rate_limit)
+@shared_task(max_retries=3)
 def process_published_record(pid):
-    """Processes a published record.
+    """Process a published record.
 
     Attempts to create a deposit using Software Heritage service. The local deposit creation is carried out  in a separate transaction
     in order to store the deposit ID and possible failed status.
@@ -33,7 +29,9 @@ def process_published_record(pid):
     If the record is invalid (e.g. not a software record), the function does not retry.
 
     Args:
+    ----
         pid (str): The record ID.
+
     """
     record = record_service.read(system_identity, id_=pid)
 
@@ -55,26 +53,37 @@ def process_published_record(pid):
 
 
 @shared_task(
-    rate_limit=rate_limit,
     retry_backoff=60,
     autoretry_for=(DepositWaiting,),
     max_retries=5,
     throws=(DepositWaiting,),
+    bind=True
 )
-def poll_deposit(id_):
-    """Polls the status of a deposit.
+def poll_deposit(self, id_):
+    """Poll the status of a deposit.
 
     ``retry_backoff`` specifices that the time between retries will increase exponentially, starting at, e.g, 60 seconds (60, 120, etc  up until the default of 10 minutes).
 
     Args:
+    ----
+        self: The Celery task instance.
         id_ (str): The ID of the deposit to poll.
 
     Raises:
+    ------
         StillWaitingException: If the deposit status is "waiting".
+
     """
     deposit = service.read(id_).deposit
     service.sync_status(deposit.id)
     new_status = deposit.status
+
+    # Manually set status to FAILED on last retry.
+    # Celery has a bug where it doesn't raise MaxRetriesExceededError, therefore we need to check retries manually.
+    if self.request.retries == 5:
+        service.handle_status_update(deposit, SWHDepositStatus.FAILED)
+        return
+
     if new_status == SWHDepositStatus.WAITING:
         raise DepositWaiting("Deposit is still waiting")
 
