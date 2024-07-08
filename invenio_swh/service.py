@@ -57,11 +57,11 @@ class SWHService(object):
         return SWHDepositResult
 
     def result_item(self, deposit: SWHDeposit):
-        """Returns a result item."""
+        """Return a result item."""
         return self.result_cls(deposit)
 
     def __init__(self, swh_controller: SWHController):
-        """Constructor.
+        """Instantiate the service.
 
         Injects the software heritage controller into the service.
         """
@@ -69,7 +69,7 @@ class SWHService(object):
 
     @unit_of_work()
     def create(self, record, uow=None):
-        """Creates a new deposit.
+        """Create a new deposit.
 
         If the controller fails to create the deposit, the transaction will be rolledback by the Unit of Work
         and the deposit won't be created locally.
@@ -87,18 +87,18 @@ class SWHService(object):
         return deposit
 
     def get_record_deposit(self, record_id):
-        """Returns the deposit associated to a given record."""
+        """Return the deposit associated to a given record."""
         deposit = self.record_cls.get_record_deposit(record_id)
         return self.result_item(deposit)
 
     def read(self, id_) -> SWHDepositResult:
-        """Reads a deposit given its id."""
+        """Read a deposit given its id."""
         deposit = self.record_cls.get(id_)
         return self.result_item(deposit)
 
     @unit_of_work()
     def sync_status(self, id_, uow=None):
-        """Synchronizes local state with external source (SWH)."""
+        """Synchronize local state with external source (SWH)."""
         deposit_res = self.read(id_)
         deposit = deposit_res.deposit
         if not deposit:
@@ -108,7 +108,7 @@ class SWHService(object):
         if new_status in ("failed", "rejected", "expired"):
             current_app.logger.warning("Deposit failed")
             current_app.logger.warning(str(res))
-        self._handle_status_update(deposit, new_status)
+        self.handle_status_update(deposit, new_status)
 
         # Handle swhid created
         swhid = res.get("deposit_swhid")
@@ -118,8 +118,7 @@ class SWHService(object):
 
     @unit_of_work()
     def complete(self, id_: int, uow=None):
-        """
-        Complete a deposit.
+        """Complete a deposit.
 
         :param id_: The ID of the deposit to complete.
         :type id_: int
@@ -142,8 +141,7 @@ class SWHService(object):
 
     @unit_of_work()
     def upload_files(self, id_, files, uow=None):
-        """
-        Uploads files to a deposit.
+        """Upload files to a deposit.
 
         ``files``` are the representation of the files to be uploaded. It is an API instance of the RDM record files.
 
@@ -176,8 +174,7 @@ class SWHService(object):
 
     @unit_of_work()
     def update_swhid(self, id_: int, swhid: str, uow=None) -> None:
-        """
-        Update the SWHID and status of a deposit.
+        """Update the SWHID and status of a deposit.
 
         The deposit is considered to be "SUCCESS" if the SWHID is successfully updated.
 
@@ -202,10 +199,30 @@ class SWHService(object):
         uow.register(RecordCommitOp(deposit))
         return deposit
 
+    def _parse_status(self, status):
+        """Parse the status to an internal status.
+
+        :param status: The status to be parsed.
+        :type status: str or SWHDepositStatus
+        """
+        if isinstance(status, str):
+            return self.SWH_STATUS_MAP.get(status)
+        if isinstance(status, SWHDepositStatus):
+            return status
+        raise ValueError(f"Invalid status: {status}")
+
     @unit_of_work()
-    def _handle_status_update(self, deposit: SWHDeposit, status: str, uow=None):
-        """Handles a status update of the deposit."""
-        internal_status = self.SWH_STATUS_MAP.get(status)
+    def handle_status_update(self, deposit: SWHDeposit, status, uow=None):
+        """Handle a status update of the deposit.
+
+        :param deposit: The deposit to be updated.
+        :type deposit: SWHDeposit
+        :param status: The new status of the deposit.
+        :type status: str or SWHDepositStatus
+        :param uow: The unit of work.
+
+        """
+        internal_status = self._parse_status(status)
         if not internal_status:
             current_app.logger.warning(
                 f"Got unkwnown deposit status from remote: {status}"
@@ -221,7 +238,7 @@ class SWHService(object):
         return fdata
 
     def validate_record(self, record):
-        """Checks whether the record can be sent to Software Heritage.
+        """Check whether the record can be sent to Software Heritage.
 
         Checks the following:
         - Record type is of a valid one
@@ -234,7 +251,7 @@ class SWHService(object):
         # Check resource type
         resource_type = record.get("metadata", {}).get("resource_type", {}).get("id")
         valid_types = current_app.config["SWH_ACCEPTED_RECORD_TYPES"]
-        if not resource_type in valid_types:
+        if resource_type not in valid_types:
             raise InvalidRecord(f"Record is not of valid type: {str(valid_types)}")
 
         self.validate_files(record.files)
@@ -252,7 +269,7 @@ class SWHService(object):
         return True
 
     def validate_files(self, files):
-        """Validates files to be sent to Software Heritage.
+        """Validate files to be sent to Software Heritage.
 
         Checks the following:
         - Record only has one file and it is of a valid extension
@@ -271,7 +288,7 @@ class SWHService(object):
 
         valid_extensions = current_app.config["SWH_ACCEPTED_EXTENSIONS"]
 
-        if not fdata.file.ext in valid_extensions:
+        if fdata.file.ext not in valid_extensions:
             raise InvalidRecord(f"File is not of valid type: {str(valid_extensions)}")
 
         # Check file size
