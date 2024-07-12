@@ -14,7 +14,7 @@ class SWHController:
     """Software Heritage controller."""
 
     def __init__(self, client: SWHCLient) -> None:
-        """Constructor."""
+        """Insantiate controller object."""
         self.client = client
 
     def _parse_response(self, data: dict) -> dict:

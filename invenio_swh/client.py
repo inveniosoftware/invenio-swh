@@ -22,26 +22,28 @@ class SWHCLient(object):
     serializer = SoftwareHeritageXMLSerializer
 
     def __init__(self, client, collection_iri, serializer_cls=None):
-        """Initializes the SWH client."""
+        """Initialize the SWH client."""
         self.client = client
         self.serializer = serializer_cls() if serializer_cls else self.serializer()
         self._collection_iri = collection_iri
 
     @property
     def collection_iri(self):
-        """Returns the collection IRI."""
+        """Return the collection IRI."""
         return self._collection_iri
 
     def _cleanup_data(self, data: dict, tags: list):
-        """
-        Cleans up the data dictionary by replacing specified tags.
+        """Clean up the data dictionary by replacing specified tags.
 
         Args:
+        ----
             data (dict): The data dictionary to be cleaned up.
             tags (tuple): A list of tuples tuple of (find, replace) pairs specifying the tags to be replaced.
 
         Returns:
+        -------
             dict: The cleaned up data dictionary.
+
         """
         stringified = json.dumps(data)
         for t in tags:
@@ -51,22 +53,22 @@ class SWHCLient(object):
         return json.loads(stringified)
 
     def edit_media_iri(self, deposit_id):
-        """Returns the Edit IRI of a deposit, used for file uploads."""
+        """Return the Edit IRI of a deposit, used for file uploads."""
         suffix = "media"
         return urllib.parse.urljoin(self.collection_iri, f"{deposit_id}/{suffix}/")
 
     def se_iri(self, deposit_id):
-        """Returns the Edit IRI of a deposit, used for metadata updates."""
+        """Return the Edit IRI of a deposit, used for metadata updates."""
         suffix = "metadata"
         return urllib.parse.urljoin(self.collection_iri, f"{deposit_id}/{suffix}/")
 
     def status_iri(self, deposit_id):
-        """Returns the status IRI of a deposit."""
+        """Return the status IRI of a deposit."""
         suffix = "status"
         return urllib.parse.urljoin(self.collection_iri, f"{deposit_id}/{suffix}/")
 
     def create_deposit(self, codemeta_json: dict):
-        """Creates a deposit in SWH.
+        """Create a deposit in SWH.
 
         The codemeta metadata is transformed to XML and then sent to SWH.
         """
@@ -88,7 +90,7 @@ class SWHCLient(object):
         return self._parse_response(content)
 
     def update_deposit_files(self, deposit_id, file, file_metadata: dict) -> None:
-        """Updates the files of a deposit in SWH.
+        """Update the files of a deposit in SWH.
 
         File must be a readable buffer.
         """
@@ -129,12 +131,12 @@ class SWHCLient(object):
         return self._parse_response(content)
 
     def get_deposit_status(self, deposit_id: int) -> dict:
-        """Returns the status of a deposit."""
+        """Return the status of a deposit."""
         resp, content = self.client.h.request(self.status_iri(deposit_id), "GET")
         return self._parse_response(content)
 
     def _parse_response(self, response_obj: bytes) -> dict:
-        """Parses the response from SWH and returns a dict."""
+        """Parse the response from SWH and returns a dict."""
         if not response_obj or response_obj == b"":
             return {}
         response_str = response_obj.decode("utf-8")

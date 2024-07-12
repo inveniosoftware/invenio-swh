@@ -17,7 +17,7 @@ class SWHCodemetaSchema(CodemetaSchema):
     deposit = fields.Method("add_deposit_info", data_key="swh:deposit")
 
     def __init__(self, *args, **kwargs):
-        """Constructor.
+        """Instantiate Codemeta schema adapted to Software Heritage.
 
         Injects the codemeta dumper into the schema processors.
         """
