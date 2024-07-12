@@ -13,7 +13,7 @@ from invenio_records_resources.services.uow import RecordCommitOp, unit_of_work
 
 from invenio_swh.api import SWHDeposit
 from invenio_swh.controller import SWHController
-from invenio_swh.errors import InvalidRecord
+from invenio_swh.errors import DepositFailed, InvalidRecord
 from invenio_swh.models import SWHDepositStatus
 from invenio_swh.schema import SWHCodemetaSchema
 
@@ -103,6 +103,8 @@ class SWHService(object):
         deposit = deposit_res.deposit
         if not deposit:
             return
+        if deposit.status == SWHDepositStatus.FAILED:
+            raise DepositFailed("Deposit has already failed. Cannot sync status.")
         res = self.swh_controller.fetch_deposit_status(deposit.id)
         new_status = res.get("deposit_status")
         if new_status in ("failed", "rejected", "expired"):
@@ -131,6 +133,8 @@ class SWHService(object):
         try:
             deposit_res = self.read(id_)
             deposit = deposit_res.deposit
+            if deposit.status == SWHDepositStatus.FAILED:
+                raise DepositFailed("Deposit has already failed. Cannot complete deposition.")
             self.swh_controller.complete_deposit(deposit.id)
             deposit.model.status = SWHDepositStatus.WAITING
         except Exception as exc:

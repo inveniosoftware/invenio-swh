@@ -27,7 +27,7 @@ class SWHController:
         res = {
             "deposit_id": dpid,
             "deposit_status": data.get("deposit_status"),
-            "deposit_swhid": data.get("deposit_swh_id"),
+            "deposit_swhid": data.get("deposit_swh_id_context"),
             "response": data,
         }
         return res
