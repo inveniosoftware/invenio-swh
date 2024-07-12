@@ -6,11 +6,12 @@
 # it under the terms of the MIT License; see LICENSE file for more details.
 """Celery tasks for Invenio / Software Heritage integration."""
 from celery.app import shared_task
+from flask import current_app
 from invenio_access.permissions import system_identity
 from invenio_rdm_records.proxies import current_rdm_records_service as record_service
 from invenio_records_resources.services.uow import UnitOfWork
 
-from invenio_swh.errors import DepositWaiting, InvalidRecord
+from invenio_swh.errors import DepositFailed, DepositWaiting, InvalidRecord
 from invenio_swh.models import SWHDepositStatus
 from invenio_swh.proxies import current_swh_service as service
 
@@ -40,14 +41,19 @@ def process_published_record(pid):
         deposit = service.create(record._record)
     except Exception as exc:
         # If it fails, the deposit was rolled back. We can create it later if the record is valid.
+        current_app.logger.exception("Failed to create deposition for archival.")
         if not isinstance(exc, InvalidRecord):
             process_published_record.retry(exc=exc)
         return
 
-    with UnitOfWork() as uow:
-        # TODO if these fails, the deposit should be "FAILED" and not "CREATED" or "WAITING".
-        service.upload_files(deposit.id, record._record.files, uow=uow)
-        service.complete(deposit.id, uow=uow)
+    try:
+        with UnitOfWork() as uow:
+            service.upload_files(deposit.id, record._record.files, uow=uow)
+            service.complete(deposit.id, uow=uow)
+            uow.commit()
+    except Exception as exc:
+        current_app.logger.exception("Failed to complete deposit archival.")
+        raise
 
     poll_deposit.delay(str(deposit.id))
 
@@ -57,7 +63,7 @@ def process_published_record(pid):
     autoretry_for=(DepositWaiting,),
     max_retries=5,
     throws=(DepositWaiting,),
-    bind=True
+    bind=True,
 )
 def poll_deposit(self, id_):
     """Poll the status of a deposit.
@@ -74,9 +80,13 @@ def poll_deposit(self, id_):
         StillWaitingException: If the deposit status is "waiting".
 
     """
-    deposit = service.read(id_).deposit
-    service.sync_status(deposit.id)
-    new_status = deposit.status
+    try:
+        deposit = service.read(id_).deposit
+        service.sync_status(deposit.id)
+        new_status = deposit.status
+    except DepositFailed:
+        # If the deposit already failed, we don't need to retry.
+        return
 
     # Manually set status to FAILED on last retry.
     # Celery has a bug where it doesn't raise MaxRetriesExceededError, therefore we need to check retries manually.
@@ -86,17 +96,3 @@ def poll_deposit(self, id_):
 
     if new_status == SWHDepositStatus.WAITING:
         raise DepositWaiting("Deposit is still waiting")
-
-
-# @shared_task()
-# def retry_failed_deposits():
-#     try:
-#         result = service.get_unfinished_deposits()
-#         for deposit in result:
-#             res = service.fetch_remote_status(deposit)
-#             status = res.get("deposit_status")
-#             service.update_status(deposit, status)
-#             if res.get("deposit_swh_id"):
-#                 service.update_swhid(deposit, res.get("deposit_swh_id"))
-#     except Exception as exc:
-#         current_app.logger.exception(str(exc))

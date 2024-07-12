@@ -133,6 +133,7 @@ class SoftwareHeritageXMLSerializer(MarshmallowSerializer):
     default_namespaces = {
         "default": "https://doi.org/10.5063/SCHEMA/CODEMETA-2.0",
         "atom": "http://www.w3.org/2005/Atom",
+        "swh": "https://www.softwareheritage.org/schema/2018/deposit"
     }
 
     def __init__(self, namespaces=None, **kwargs):

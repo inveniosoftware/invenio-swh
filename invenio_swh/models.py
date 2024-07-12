@@ -49,7 +49,7 @@ class SWHDepositModel(db.Model, Timestamp):
     object_uuid = db.Column(UUIDType, primary_key=True)
     """Object ID - e.g. a record id."""
 
-    swhid = db.Column(db.String(255), nullable=True)
+    swhid = db.Column(db.String(1024), nullable=True)
     """Software Hash ID."""
 
     swh_deposit_id = db.Column(db.String, nullable=True)

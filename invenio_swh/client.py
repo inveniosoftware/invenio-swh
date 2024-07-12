@@ -94,7 +94,7 @@ class SWHCLient(object):
         """
         headers = {}
         headers["Content-Type"] = str(file_metadata.get("mimetype"))
-        headers["Content-MD5"] = str(file_metadata.get("checksum").strip("md5:"))
+        headers["Content-MD5"] = str(file_metadata.get("checksum").removeprefix("md5:"))
         headers["Content-Length"] = str(file_metadata.get("size"))
         fname = file_metadata.get("filename")
         headers["Content-Disposition"] = f"attachment; filename={fname}"
