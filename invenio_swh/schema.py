@@ -49,9 +49,6 @@ class SWHCodemetaSchema(CodemetaSchema):
             parent_record = obj["parent"]
 
         parent_doi = parent_record.get("pids", {}).get("doi")["identifier"]
-        prefix = current_app.config["DATACITE_PREFIX"]
-        doi_format = current_app.config["DATACITE_FORMAT"]
-        parent_doi = doi_format.format(prefix=prefix, id=parent_doi)
         origin_obj = {"swh:origin": {"@url": f"https://doi.org/{parent_doi}"}}
 
         # If the record is the first version, it dumps `create_origin`
