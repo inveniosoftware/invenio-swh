@@ -17,27 +17,27 @@ class BaseFormatter:
     """Base formatter interface."""
 
     def to_bytes(self, obj):
-        """Converts the object to bytes."""
+        """Convert the object to bytes."""
         raise NotImplementedError
 
     def to_bytes_list(self, obj):
-        """Converts the object list to bytes."""
+        """Convert the object list to bytes."""
         raise NotImplementedError
 
     def to_str(self, obj):
-        """Converts the object to string."""
+        """Convert the object to string."""
         raise NotImplementedError
 
     def to_str_list(self, obj):
-        """Converts the object list to string."""
+        """Convert the object list to string."""
         raise NotImplementedError
 
     def to_etree(self, obj):
-        """Converts the object to etree."""
+        """Convert the object to etree."""
         raise NotImplementedError
 
     def to_etree_list(self, obj):
-        """Converts the object list to etree."""
+        """Convert the object list to etree."""
         raise NotImplementedError
 
 
@@ -73,8 +73,7 @@ class XMLFormatter(BaseFormatter):
         return self.to_bytes(self.to_etree(obj))
 
     def to_etree(self, obj):
-        """
-        Convert an object to an ElementTree object.
+        """Convert an object to an ElementTree object.
 
         :param obj: The object to be converted.
         :type obj: dict or str
@@ -103,8 +102,7 @@ class XMLFormatter(BaseFormatter):
         return _etree
 
     def to_bytes(self, obj, encoding="utf-8") -> bytes:
-        """
-        Convert an ElementTree object to bytes string.
+        """Convert an ElementTree object to bytes string.
 
         :param obj: The ElementTree object to be converted.
         :type obj: ElementTree
@@ -116,8 +114,7 @@ class XMLFormatter(BaseFormatter):
         return etree.tostring(obj, xml_declaration=True, encoding=encoding)
 
     def to_str(self, obj) -> str:
-        """
-        Convert an ElementTree object to a unicode string.
+        """Convert an ElementTree object to a unicode string.
 
         :param obj: The ElementTree object to be converted.
         :type obj: ElementTree
@@ -137,7 +134,7 @@ class SoftwareHeritageXMLSerializer(MarshmallowSerializer):
     }
 
     def __init__(self, namespaces=None, **kwargs):
-        """Constructor."""
+        """Instantiate serializer object."""
         self.namespaces = namespaces or self.default_namespaces
         super().__init__(
             format_serializer_cls=XMLFormatter,

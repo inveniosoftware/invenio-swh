@@ -64,5 +64,5 @@ class SWHDepositModel(db.Model, Timestamp):
     """Deposit status. It is indexed to improve the search of deposits that e.g failed."""
 
     def __repr__(self):
-        """String representation of a SWHDeposit."""
+        """Return string representation of a SWHDeposit."""
         return f"<SWHDepositModel(deposit_id={self.swh_deposit_id}, object_uuid={self.object_uuid}, status={self.status})>"

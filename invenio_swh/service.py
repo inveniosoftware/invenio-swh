@@ -22,7 +22,7 @@ class SWHDepositResult(object):
     """Single SWHDeposit result."""
 
     def __init__(self, deposit: SWHDeposit) -> None:
-        """Constructor."""
+        """Instantiate result item."""
         self.deposit = deposit
 
 

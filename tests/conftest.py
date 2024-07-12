@@ -79,7 +79,7 @@ RunningApp = namedtuple(
 
 @pytest.fixture
 def running_app(app, location, cache, resource_type_v):
-    """This fixture provides an app with the typically needed db data loaded.
+    """Provide an app with the typically needed db data loaded.
 
     All of these fixtures are often needed together, so collecting them
     under a semantic umbrella makes sense.
@@ -138,7 +138,7 @@ def add_file_to_draft(identity, draft_id, file_name, file_contents):
 
 @pytest.fixture(scope="function")
 def create_record_factory(identity_simple, location):
-    """Factory to create and publish a record with minimal data with, or without, files."""
+    """Return a factory to create and publish a record with minimal data with, or without, files."""
 
     def _inner(metadata, files=[]):
         s = current_rdm_records_service
@@ -153,7 +153,7 @@ def create_record_factory(identity_simple, location):
 
 @pytest.fixture(scope="function")
 def identity_simple(user):
-    """Simple identity fixture."""
+    """Return simple identity fixture."""
     i = Identity(1)
     i.provides.add(UserNeed(1))
     i.provides.add(Need(method="system_role", value="authenticated_user"))

@@ -17,7 +17,8 @@ class SWHDeposit:
     This class provides an abstraction layer for interacting with Software Heritage deposits.
     It encapsulates the functionality for creating, retrieving, and managing deposits.
 
-    Attributes:
+    Attributes
+    ----------
         model_cls (class): The model class associated with the deposit.
         model (object): The instance of the model associated with the deposit.
 
@@ -26,7 +27,7 @@ class SWHDeposit:
     model_cls = SWHDepositModel
 
     def __init__(self, model=None):
-        """Constructor."""
+        """Instantiate deposit object."""
         self.model = model
 
     @classmethod
