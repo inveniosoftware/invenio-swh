@@ -60,35 +60,34 @@ class SWHService(object):
         """Return a result item."""
         return self.result_cls(deposit)
 
-    def __init__(self, swh_controller: SWHController):
+    def __init__(self, controller: SWHController):
         """Instantiate the service.
 
         Injects the software heritage controller into the service.
         """
-        self.swh_controller = swh_controller
+        self.controller = controller
 
     @unit_of_work()
     def create(self, record, uow=None):
         """Create a new deposit.
 
-        If the controller fails to create the deposit, the transaction will be rolledback by the Unit of Work
-        and the deposit won't be created locally.
+        If the controller fails to create the deposit, it won't be created locally either.
         """
         self.validate_record(record)
 
         deposit = self.record_cls.create(record.id)
 
         metadata = self.schema.dump(record)
-        swh_deposit = self.swh_controller.create_deposit(metadata)
-        deposit.model.swh_deposit_id = str(swh_deposit["deposit_id"])
-        deposit.model.status = SWHDepositStatus.CREATED
+        swh_deposit = self.controller.create_deposit(metadata)
+        deposit.id = str(swh_deposit["deposit_id"])
+        self.update_status(deposit, SWHDepositStatus.CREATED, uow=uow)
 
         uow.register(RecordCommitOp(deposit))
         return deposit
 
     def get_record_deposit(self, record_id):
         """Return the deposit associated to a given record."""
-        deposit = self.record_cls.get_record_deposit(record_id)
+        deposit = self.record_cls.get_by_record_id(record_id)
         return self.result_item(deposit)
 
     def read(self, id_) -> SWHDepositResult:
@@ -105,12 +104,12 @@ class SWHService(object):
             return
         if deposit.status == SWHDepositStatus.FAILED:
             raise DepositFailed("Deposit has already failed. Cannot sync status.")
-        res = self.swh_controller.fetch_deposit_status(deposit.id)
+        res = self.controller.fetch_deposit_status(deposit.id)
         new_status = res.get("deposit_status")
         if new_status in ("failed", "rejected", "expired"):
             current_app.logger.warning("Deposit failed")
             current_app.logger.warning(str(res))
-        self.handle_status_update(deposit, new_status)
+        self.update_status(deposit, new_status)
 
         # Handle swhid created
         swhid = res.get("deposit_swhid")
@@ -134,13 +133,14 @@ class SWHService(object):
             deposit_res = self.read(id_)
             deposit = deposit_res.deposit
             if deposit.status == SWHDepositStatus.FAILED:
-                raise DepositFailed("Deposit has already failed. Cannot complete deposition.")
-            self.swh_controller.complete_deposit(deposit.id)
-            deposit.model.status = SWHDepositStatus.WAITING
+                raise DepositFailed(
+                    "Deposit has already failed. Cannot complete deposition."
+                )
+            self.controller.complete_deposit(deposit.id)
+            self.update_status(deposit, SWHDepositStatus.WAITING, uow=uow)
         except Exception as exc:
             current_app.logger.exception(str(exc))
-            deposit.model.status = SWHDepositStatus.FAILED
-        uow.register(RecordCommitOp(deposit))
+            self.update_status(deposit, SWHDepositStatus.FAILED, uow=uow)
         return deposit
 
     @unit_of_work()
@@ -169,11 +169,10 @@ class SWHService(object):
             fp = file.get_stream("rb")
             file_metadata = file.file.dumps()
             file_metadata["filename"] = file.file.key
-            self.swh_controller.update_deposit_files(deposit.id, fp, file_metadata)
+            self.controller.update_deposit_files(deposit.id, fp, file_metadata)
         except Exception as exc:
             current_app.logger.exception(str(exc))
-            deposit.model.status = SWHDepositStatus.FAILED
-            uow.register(RecordCommitOp(deposit))
+            self.update_status(deposit, SWHDepositStatus.FAILED, uow=uow)
         return deposit
 
     @unit_of_work()
@@ -194,13 +193,13 @@ class SWHService(object):
         try:
             deposit_res = self.read(id_)
             deposit = deposit_res.deposit
-            deposit.model.swhid = swhid
-            deposit.model.status = SWHDepositStatus.SUCCESS
+            deposit.swhid = swhid
+            self.update_status(deposit, SWHDepositStatus.SUCCESS, uow=uow)
+            uow.register(RecordCommitOp(deposit))
         except Exception as exc:
             current_app.logger.exception(str(exc))
-            deposit.model.status = SWHDepositStatus.FAILED
+            self.update_status(deposit, SWHDepositStatus.FAILED, uow=uow)
 
-        uow.register(RecordCommitOp(deposit))
         return deposit
 
     def _parse_status(self, status):
@@ -216,8 +215,11 @@ class SWHService(object):
         raise ValueError(f"Invalid status: {status}")
 
     @unit_of_work()
-    def handle_status_update(self, deposit: SWHDeposit, status, uow=None):
+    def update_status(self, deposit: SWHDeposit, status, uow=None):
         """Handle a status update of the deposit.
+
+        It can be used to update the status from the remote, by parsing the status to an internal status.
+        It can also be used to update the status to a new one.
 
         :param deposit: The deposit to be updated.
         :type deposit: SWHDeposit
@@ -227,13 +229,9 @@ class SWHService(object):
 
         """
         internal_status = self._parse_status(status)
-        if not internal_status:
-            current_app.logger.warning(
-                f"Got unkwnown deposit status from remote: {status}"
-            )
-            return
-        if deposit.model.status != internal_status:
-            deposit.model.status = internal_status
+        # Update the status if it has changed
+        if deposit.status != internal_status:
+            deposit.status = internal_status
             uow.register(RecordCommitOp(deposit))
 
     def _get_first_file(self, files_manager):

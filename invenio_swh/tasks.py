@@ -5,6 +5,8 @@
 # Invenio-swh is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
 """Celery tasks for Invenio / Software Heritage integration."""
+from datetime import datetime, timedelta, timezone
+
 from celery.app import shared_task
 from flask import current_app
 from invenio_access.permissions import system_identity
@@ -34,10 +36,9 @@ def process_published_record(pid):
         pid (str): The record ID.
 
     """
-    record = record_service.read(system_identity, id_=pid)
-
     try:
-        # Create the deposit in a separate transaction to store the deposit ID and possible failed status
+        record = record_service.read(system_identity, id_=pid)
+        # Create the deposit in a separate transaction. If it fails, no deposit is created locally.
         deposit = service.create(record._record)
     except Exception as exc:
         # If it fails, the deposit was rolled back. We can create it later if the record is valid.
@@ -83,7 +84,6 @@ def poll_deposit(self, id_):
     try:
         deposit = service.read(id_).deposit
         service.sync_status(deposit.id)
-        new_status = deposit.status
     except DepositFailed:
         # If the deposit already failed, we don't need to retry.
         return
@@ -91,8 +91,30 @@ def poll_deposit(self, id_):
     # Manually set status to FAILED on last retry.
     # Celery has a bug where it doesn't raise MaxRetriesExceededError, therefore we need to check retries manually.
     if self.request.retries == 5:
-        service.handle_status_update(deposit, SWHDepositStatus.FAILED)
+        service.update_status(deposit, SWHDepositStatus.FAILED)
         return
 
-    if new_status == SWHDepositStatus.WAITING:
+    if deposit.status == SWHDepositStatus.WAITING:
         raise DepositWaiting("Deposit is still waiting")
+
+
+@shared_task()
+def cleanup_depositions():
+    """Cleanup old depositions."""
+    if not current_app.config.get("SWH_ENABLED"):
+        current_app.logger.warning()
+        return
+    Deposit = service.record_cls.model_cls
+    # query for records that are stuck in "waiting" and were created in the previous 24 hours
+    res = Deposit.query.filter(
+        Deposit.status == SWHDepositStatus.WAITING,
+        Deposit.created >= datetime.now(timezone.utc) - timedelta(days=1),
+    )
+
+    for deposit in res:
+        try:
+            service.update_status(deposit, SWHDepositStatus.FAILED)
+        except Exception as ex:
+            # Avoid failing the whole cleanup task if one deposit fails
+            current_app.logger.exception("Failed to cleanup deposit.")
+            continue
