@@ -8,7 +8,7 @@
 
 from invenio_db import db
 
-from invenio_swh.models import SWHDepositModel
+from invenio_swh.models import SWHDepositModel, SWHDepositStatus
 
 
 class SWHDeposit:
@@ -46,14 +46,7 @@ class SWHDeposit:
             return cls(deposit)
 
     @classmethod
-    def get_by_status(cls, status):
-        """Get a swh deposit by status."""
-        with db.session.no_autoflush:
-            query = cls.model_cls.query.filter_by(status=status)
-            return [cls(deposit) for deposit in query.all()]
-
-    @classmethod
-    def get_record_deposit(cls, record_id):
+    def get_by_record_id(cls, record_id):
         """Get a local swh deposit by record id."""
         with db.session.no_autoflush:
             deposit = cls.model_cls.query.filter_by(object_uuid=record_id).one_or_none()
@@ -69,15 +62,37 @@ class SWHDeposit:
         """Returns the remote id of the swh deposit."""
         return self.model.swh_deposit_id
 
+    @id.setter
+    def id(self, value):
+        """Set the remote id of the swh deposit."""
+        self.model.swh_deposit_id = value
+
     @property
     def swhid(self):
         """Returns the software hash id of the swh deposit."""
         return self.model.swhid
 
+    @swhid.setter
+    def swhid(self, value):
+        """Set the software hash id of the swh deposit."""
+        self.model.swhid = value
+
     @property
     def status(self):
         """Returns the status of the swh deposit."""
         return self.model.status
+
+    @status.setter
+    def status(self, value):
+        """Set the status of the swh deposit."""
+        if isinstance(value, str) and value in [x.item for x in SWHDepositStatus]:
+            self.model.status = SWHDepositStatus(value)
+        elif isinstance(value, SWHDepositStatus):
+            self.model.status = value
+        else:
+            raise ValueError(
+                f"Invalid status value for Software Heritage deposit. Got: {value}"
+            )
 
     def commit(self):
         """Commit the deposit to the database."""

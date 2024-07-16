@@ -86,6 +86,7 @@ class SWHCLient(object):
             self.collection_iri, "POST", headers=headers, payload=data
         )
         if resp.status >= 300:
+            print(content)
             raise ClientException(f"Failed to create deposit: {resp.status}")
         return self._parse_response(content)
 
