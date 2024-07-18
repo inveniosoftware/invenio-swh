@@ -5,7 +5,7 @@
 # Invenio-swh is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
 """Celery tasks for Invenio / Software Heritage integration."""
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from celery.app import shared_task
 from flask import current_app
@@ -53,8 +53,9 @@ def process_published_record(pid):
             service.complete(deposit.id, uow=uow)
             uow.commit()
     except Exception as exc:
+        # Don't retry the task if failed.
         current_app.logger.exception("Failed to complete deposit archival.")
-        raise
+        return
 
     poll_deposit.delay(str(deposit.id))
 
@@ -87,6 +88,9 @@ def poll_deposit(self, id_):
     except DepositFailed:
         # If the deposit already failed, we don't need to retry.
         return
+    except Exception:
+        # Gracefully fail, the deposit can still be retried
+        pass
 
     # Manually set status to FAILED on last retry.
     # Celery has a bug where it doesn't raise MaxRetriesExceededError, therefore we need to check retries manually.
@@ -102,19 +106,27 @@ def poll_deposit(self, id_):
 def cleanup_depositions():
     """Cleanup old depositions."""
     if not current_app.config.get("SWH_ENABLED"):
-        current_app.logger.warning()
+        current_app.logger.warning(
+            "Sofware Heritage interation is not enabled, cleanup task can't run."
+        )
         return
     Deposit = service.record_cls.model_cls
-    # query for records that are stuck in "waiting" and were created in the previous 24 hours
+    # query for records that are stuck in "waiting"
     res = Deposit.query.filter(
         Deposit.status == SWHDepositStatus.WAITING,
-        Deposit.created >= datetime.now(timezone.utc) - timedelta(days=1),
+        Deposit.updated < datetime.now() - timedelta(days=1),
     )
 
     for deposit in res:
         try:
-            service.update_status(deposit, SWHDepositStatus.FAILED)
+            service.sync_status(deposit.id)
         except Exception as ex:
-            # Avoid failing the whole cleanup task if one deposit fails
-            current_app.logger.exception("Failed to cleanup deposit.")
-            continue
+            # If the sync failed for any reason, set the status to "FAILED"
+            try:
+                service.update_status(deposit, SWHDepositStatus.FAILED)
+            except Exception as exc:
+                current_app.logger.exception(
+                    "Failed to sync deposit status during cleanup.",
+                    extra={"deposit": deposit.id},
+                )
+                pass  # Gracefully handle update failure, the deposit will be retried in the future
