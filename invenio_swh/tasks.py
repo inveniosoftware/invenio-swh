@@ -13,7 +13,7 @@ from invenio_access.permissions import system_identity
 from invenio_rdm_records.proxies import current_rdm_records_service as record_service
 from invenio_records_resources.services.uow import UnitOfWork
 
-from invenio_swh.errors import DepositFailed, DepositWaiting, InvalidRecord
+from invenio_swh.errors import DepositWaiting, InvalidRecord
 from invenio_swh.models import SWHDepositStatus
 from invenio_swh.proxies import current_swh_service as service
 
@@ -85,12 +85,13 @@ def poll_deposit(self, id_):
     try:
         deposit = service.read(id_).deposit
         service.sync_status(deposit.id)
-    except DepositFailed:
-        # If the deposit already failed, we don't need to retry.
-        return
     except Exception:
         # Gracefully fail, the deposit can still be retried
         pass
+
+    # If the deposit failed already, don't do anything else
+    if deposit.status == SWHDepositStatus.FAILED:
+        return
 
     # Manually set status to FAILED on last retry.
     # Celery has a bug where it doesn't raise MaxRetriesExceededError, therefore we need to check retries manually.
@@ -110,14 +111,17 @@ def cleanup_depositions():
             "Sofware Heritage interation is not enabled, cleanup task can't run."
         )
         return
-    Deposit = service.record_cls.model_cls
+    Deposit = service.record_cls
+    DepositModel = Deposit.model_cls
     # query for records that are stuck in "waiting"
-    res = Deposit.query.filter(
-        Deposit.status == SWHDepositStatus.WAITING,
-        Deposit.updated < datetime.now() - timedelta(days=1),
+    res = DepositModel.query.filter(
+        DepositModel.status == SWHDepositStatus.WAITING,
+        DepositModel.updated < datetime.now() - timedelta(days=1),
     )
 
-    for deposit in res:
+    for _deposit in res:
+        # Wrap the deposit in its API object
+        deposit = service.record_cls.create(_deposit.object_uuid)
         try:
             service.sync_status(deposit.id)
         except Exception as ex:

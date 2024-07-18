@@ -6,14 +6,12 @@
 # it under the terms of the MIT License; see LICENSE file for more details.
 """Invenio Software Heritage service."""
 
-from collections.abc import Iterable
-
 from flask import current_app
 from invenio_records_resources.services.uow import RecordCommitOp, unit_of_work
 
 from invenio_swh.api import SWHDeposit
 from invenio_swh.controller import SWHController
-from invenio_swh.errors import DepositFailed, InvalidRecord
+from invenio_swh.errors import DepositFailed, DepositNotCreated, InvalidRecord
 from invenio_swh.models import SWHDepositStatus
 from invenio_swh.schema import SWHCodemetaSchema
 
@@ -75,11 +73,14 @@ class SWHService(object):
         """
         self.validate_record(record)
 
-        deposit = self.record_cls.create(record.id)
-
         metadata = self.schema.dump(record)
         swh_deposit = self.controller.create_deposit(metadata)
-        deposit.id = str(swh_deposit["deposit_id"])
+        deposit_id = swh_deposit.get("deposit_id")
+        if not deposit_id:
+            raise DepositNotCreated("Deposit id not returned by SWH.")
+
+        deposit = self.record_cls.create(record.id)
+        deposit.id = str(deposit_id)
         self.update_status(deposit, SWHDepositStatus.CREATED, uow=uow)
 
         uow.register(RecordCommitOp(deposit))
@@ -102,13 +103,8 @@ class SWHService(object):
         deposit = deposit_res.deposit
         if not deposit:
             return
-        if deposit.status == SWHDepositStatus.FAILED:
-            raise DepositFailed("Deposit has already failed. Cannot sync status.")
         res = self.controller.fetch_deposit_status(deposit.id)
         new_status = res.get("deposit_status")
-        if new_status in ("failed", "rejected", "expired"):
-            current_app.logger.warning("Deposit failed")
-            current_app.logger.warning(str(res))
         self.update_status(deposit, new_status)
 
         # Handle swhid created
@@ -129,17 +125,17 @@ class SWHService(object):
         :rtype: Deposit
         :raises DepositFailed: If the deposit has already failed.
         """
+        deposit_res = self.read(id_)
+        deposit = deposit_res.deposit
+        if deposit.status == SWHDepositStatus.FAILED:
+            raise DepositFailed(
+                "Deposit has already failed. Cannot complete deposition."
+            )
         try:
-            deposit_res = self.read(id_)
-            deposit = deposit_res.deposit
-            if deposit.status == SWHDepositStatus.FAILED:
-                raise DepositFailed(
-                    "Deposit has already failed. Cannot complete deposition."
-                )
             self.controller.complete_deposit(deposit.id)
             self.update_status(deposit, SWHDepositStatus.WAITING, uow=uow)
         except Exception as exc:
-            current_app.logger.exception(str(exc))
+            current_app.logger.exception("Deposit completion failed.")
             self.update_status(deposit, SWHDepositStatus.FAILED, uow=uow)
         return deposit
 
@@ -161,9 +157,9 @@ class SWHService(object):
         :return: The updated deposit.
         :rtype: object
         """
+        deposit_res = self.read(id_)
+        deposit = deposit_res.deposit
         try:
-            deposit_res = self.read(id_)
-            deposit = deposit_res.deposit
             self.validate_files(files)
             file = self._get_first_file(files)
             fp = file.get_stream("rb")
@@ -190,9 +186,9 @@ class SWHService(object):
         :return: The updated deposit.
         :rtype: object
         """
+        deposit_res = self.read(id_)
+        deposit = deposit_res.deposit
         try:
-            deposit_res = self.read(id_)
-            deposit = deposit_res.deposit
             deposit.swhid = swhid
             self.update_status(deposit, SWHDepositStatus.SUCCESS, uow=uow)
             uow.register(RecordCommitOp(deposit))
