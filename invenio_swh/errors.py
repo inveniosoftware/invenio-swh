@@ -30,6 +30,10 @@ class DepositFailed(InvenioSWHException):
     """Raised when the deposit status is "failed"."""
 
 
+class DepositNotCreated(InvenioSWHException):
+    """Raised when the deposit failed to be created."""
+
+
 ####
 # Controller exceptions
 ####
