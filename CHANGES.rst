@@ -8,6 +8,13 @@
 Changes
 =======
 
+Version 0.10.0 (released 2024-07-22)
+
+- model: added context to swhid and indices
+- service: added origin information for deposits
+- deposits: set status to FAILED after max poll retries
+- tasks: added cleanup for deposits stuck in "waiting"
+
 Version 0.9.0 (released 2024-04-11)
 
 - installation: remove upper bounds from dependencies
