@@ -79,12 +79,12 @@ class SWHDeposit:
     @property
     def record_id(self):
         """Returns the UUID of the object associated with the record."""
-        return self.model.object_uuid
+        return self.model.object_uuid if self.model else None
 
     @property
     def id(self):
         """Returns the remote id of the swh deposit."""
-        return self.model.swh_deposit_id
+        return self.model.swh_deposit_id if self.model else None
 
     @id.setter
     def id(self, value):
@@ -94,7 +94,7 @@ class SWHDeposit:
     @property
     def swhid(self):
         """Returns the software hash id of the swh deposit."""
-        return self.model.swhid
+        return self.model.swhid if self.model else None
 
     @swhid.setter
     def swhid(self, value):
@@ -104,7 +104,7 @@ class SWHDeposit:
     @property
     def status(self):
         """Returns the status of the swh deposit."""
-        return self.model.status
+        return self.model.status if self.model else None
 
     @status.setter
     def status(self, value):
