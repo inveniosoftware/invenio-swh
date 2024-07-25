@@ -36,11 +36,11 @@ class SWHObj(object):
 
 class SWHSysField(SystemField):
     def __init__(self, key):
-        """Initialise the versions field."""
+        """Initialise the software hash id field."""
         super().__init__(key)
 
     def __get__(self, record, owner=None):
-        """Get the record's access object."""
+        """Get the SWH object."""
         if record is None:
             # access by class
             return self
@@ -49,11 +49,11 @@ class SWHSysField(SystemField):
         return self.obj(record)
 
     def __set__(self, record, obj):
-        """Set the records access object."""
+        """Set the SWH object."""
         self.set_obj(record, obj)
 
     def obj(self, record):
-        """Get the version manager."""
+        """Initialise the object, or load it from record's cache."""
         obj = self._get_cache(record)
         if obj is not None:
             return obj
@@ -61,7 +61,7 @@ class SWHSysField(SystemField):
         return obj
 
     def set_obj(self, record, swh):
-        """Set an version manager on the record."""
+        """Set the object in the record's cache."""
         assert isinstance(swh, SWHObj)
         self._set_cache(record, swh)
 
