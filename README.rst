@@ -37,3 +37,33 @@ The development plan and scope is available `as a Google Doc
 
 Further documentation will be available on
 https://invenio-swh.readthedocs.io/
+
+
+Configuration
+=============
+
+After installation, the following configuration must be set in the instance:
+
+- ``SWH_ENABLED``: Enable or disable the integration.
+- ``SWH_SERVICE_DOCUMENT``: The URL of the Software Heritage service document.
+- ``SWH_COLLECTION_IRI``: The IRI of the collection to deposit into.
+- ``SWH_USERNAME``: The username to use to authenticate with Software Heritage service.
+- ``SWH_PASSWORD``: The password to use to authenticate with Software Heritage service.
+
+Lastly, the following command must be run to create the necessary field in the record's search mapping:
+
+.. code-block:: console
+
+    PUT <record-index-name>/_mapping
+    {
+        "properties": {
+            "swh": {
+                "type": "object",
+                "properties": {
+                    "swhid": {
+                        "type": "keyword"
+                    }
+                }
+            }
+        }
+    }

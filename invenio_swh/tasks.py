@@ -105,6 +105,14 @@ def poll_deposit(self, id_):
     # If the deposit failed already, don't do anything else
     if deposit.status == SWHDepositStatus.FAILED:
         return
+    # If completed, re-index the record
+    elif (
+        deposit.status == SWHDepositStatus.SUCCESS
+        and deposit.record_id
+        and deposit.swhid
+    ):
+        record_service.indexer.index_by_id(deposit.record_id)
+        return
 
     # Manually set status to WAITING on last retry.
     # Celery has a bug where it doesn't raise MaxRetriesExceededError, therefore we need to check retries manually.
@@ -133,17 +141,19 @@ def cleanup_depositions():
     )
 
     for _deposit in res:
-        # Wrap the deposit in its API object
         deposit = service.record_cls.create(_deposit.object_uuid)
         try:
+            # Sync and re-index the record if the deposit was successful
             service.sync_status(deposit.id)
+            if deposit.status == SWHDepositStatus.SUCCESS and deposit.record_id:
+                record_service.indexer.index_by_id(deposit.record_id)
         except Exception as ex:
             # If the sync failed for any reason, set the status to "FAILED"
             try:
                 service.update_status(deposit, SWHDepositStatus.FAILED)
-            except Exception as exc:
+            except Exception:
                 current_app.logger.exception(
                     "Failed to sync deposit status during cleanup.",
                     extra={"deposit": deposit.id},
                 )
-                pass  # Gracefully handle update failure, the deposit will be retried in the future
+                # Gracefully handle update failure, the deposit can be retried in the future
