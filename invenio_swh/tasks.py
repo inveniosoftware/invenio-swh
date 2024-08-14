@@ -40,11 +40,16 @@ def process_published_record(pid):
         record = record_service.read(system_identity, id_=pid)
         # Create the deposit in a separate transaction. If it fails, no deposit is created locally.
         deposit = service.create(record._record)
+    except InvalidRecord as exc:
+        # If the record is invalid, don't retry the task.
+        current_app.logger.info(
+            "Invalid record, skipping deposit creation.", exc_info=True
+        )
+        return
     except Exception as exc:
         # If it fails, the deposit was rolled back. We can create it later if the record is valid.
         current_app.logger.exception("Failed to create deposition for archival.")
-        if not isinstance(exc, InvalidRecord):
-            process_published_record.retry(exc=exc)
+        process_published_record.retry(exc=exc)
         return
 
     try:
