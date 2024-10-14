@@ -96,7 +96,7 @@ def poll_deposit(self, id_):
     # Manually set status to FAILED on last retry.
     # Celery has a bug where it doesn't raise MaxRetriesExceededError, therefore we need to check retries manually.
     if self.request.retries == 5:
-        service.update_status(deposit, SWHDepositStatus.FAILED)
+        service.update_status(deposit, SWHDepositStatus.WAITING)
         return
 
     if deposit.status == SWHDepositStatus.WAITING:
