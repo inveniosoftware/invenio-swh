@@ -8,6 +8,14 @@
 Changes
 =======
 
+Version 0.10.2 (released 2024-10-18)
+
+- tasks: remove logging for invalid records
+
+Version 0.10.1 (released 2024-10-15)
+
+- tasks: updated polling logic to wait on max retry
+
 Version 0.10.0 (released 2024-07-22)
 
 - model: added context to swhid and indices
