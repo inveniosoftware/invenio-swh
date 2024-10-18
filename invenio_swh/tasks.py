@@ -48,6 +48,7 @@ def process_published_record(pid):
         return
     except Exception as exc:
         # If it fails, the deposit was rolled back. We can create it later if the record is valid.
+        # TODO is InvalidRecord don't even log the exception
         current_app.logger.exception("Failed to create deposition for archival.")
         process_published_record.retry(exc=exc)
         return
