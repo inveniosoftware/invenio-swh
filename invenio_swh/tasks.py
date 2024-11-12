@@ -13,7 +13,12 @@ from invenio_access.permissions import system_identity
 from invenio_rdm_records.proxies import current_rdm_records_service as record_service
 from invenio_records_resources.services.uow import UnitOfWork
 
-from invenio_swh.errors import DepositWaiting, InvalidRecord
+from invenio_swh.errors import (
+    DepositNotFound,
+    DepositPollFailed,
+    DepositWaiting,
+    InvalidRecord,
+)
 from invenio_swh.models import SWHDepositStatus
 from invenio_swh.proxies import current_swh_service as service
 
@@ -67,9 +72,9 @@ def process_published_record(pid):
 
 @shared_task(
     retry_backoff=60,
-    autoretry_for=(DepositWaiting,),
+    autoretry_for=(DepositWaiting, DepositPollFailed),
     max_retries=5,
-    throws=(DepositWaiting,),
+    throws=(DepositWaiting, DepositPollFailed),
     bind=True,
 )
 def poll_deposit(self, id_):
@@ -84,21 +89,24 @@ def poll_deposit(self, id_):
 
     Raises:
     ------
-        StillWaitingException: If the deposit status is "waiting".
+        DepositWaiting: If the deposit status is "waiting".
 
     """
     try:
         deposit = service.read(id_).deposit
         service.sync_status(deposit.id)
+    except DepositNotFound:
+        # If the deposit never existed, don't retry the task.
+        return
     except Exception:
-        # Gracefully fail, the deposit can still be retried
-        pass
+        # For other exceptions, retry the task.
+        raise DepositPollFailed("Deposit polling failed.")
 
     # If the deposit failed already, don't do anything else
     if deposit.status == SWHDepositStatus.FAILED:
         return
 
-    # Manually set status to FAILED on last retry.
+    # Manually set status to WAITING on last retry.
     # Celery has a bug where it doesn't raise MaxRetriesExceededError, therefore we need to check retries manually.
     if self.request.retries == 5:
         service.update_status(deposit, SWHDepositStatus.WAITING)
@@ -110,7 +118,7 @@ def poll_deposit(self, id_):
 
 @shared_task()
 def cleanup_depositions():
-    """Cleanup old depositions."""
+    """Cleanup depositions that are stuck in WAITING until the day before."""
     if not current_app.config.get("SWH_ENABLED"):
         current_app.logger.warning(
             "Sofware Heritage interation is not enabled, cleanup task can't run."
