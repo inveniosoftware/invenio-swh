@@ -7,6 +7,8 @@
 """API representation of a Software Heritage deposit."""
 
 from invenio_db import db
+from invenio_rdm_records.proxies import current_rdm_records_service as record_service
+from werkzeug.utils import cached_property
 
 from invenio_swh.models import SWHDepositModel, SWHDepositStatus
 
@@ -36,6 +38,28 @@ class SWHDeposit:
         with db.session.no_autoflush:
             deposit = cls.model_cls(object_uuid=object_uuid)
             return cls(deposit)
+
+    @cached_property
+    def origin(self):
+        """Return the origin of the deposit."""
+        records_ids = self.record_cls.get_records_by_parent(
+            self.record.parent, with_deleted=True, ids_only=True
+        )
+        for record_id in records_ids:
+            deposit = SWHDeposit.get_by_record_id(record_id)
+            if deposit.model and deposit.status == SWHDepositStatus.SUCCESS:
+                return self.record.parent
+        return None
+
+    @property
+    def record_cls(self):
+        """Return the record class associated with the deposit."""
+        return record_service.record_cls
+
+    @cached_property
+    def record(self):
+        """Return the record associated with the deposit."""
+        return self.record_cls.get_record(self.model.object_uuid)
 
     @classmethod
     def get(cls, id_):

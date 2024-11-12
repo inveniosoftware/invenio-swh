@@ -8,10 +8,16 @@
 
 from flask import current_app
 from invenio_records_resources.services.uow import RecordCommitOp, unit_of_work
+from sqlalchemy.orm.exc import NoResultFound
 
 from invenio_swh.api import SWHDeposit
 from invenio_swh.controller import SWHController
-from invenio_swh.errors import DepositFailed, DepositNotCreated, InvalidRecord
+from invenio_swh.errors import (
+    DepositFailed,
+    DepositNotCreated,
+    DepositNotFound,
+    InvalidRecord,
+)
 from invenio_swh.models import SWHDepositStatus
 from invenio_swh.schema import SWHCodemetaSchema
 
@@ -74,12 +80,20 @@ class SWHService(object):
         self.validate_record(record)
 
         metadata = self.schema.dump(record)
+        deposit = self.record_cls.create(record.id)
+
+        # Add origin information to the deposit medatada
+        parent_doi = record.parent.pids["doi"]["identifier"]
+        origin_url = {"swh:origin": {"@url": f"https://doi.org/{parent_doi}"}}
+        metadata["swh:deposit"] = {
+            ("swh:add_to_origin" if deposit.origin else "swh:create_origin"): origin_url
+        }
+
         swh_deposit = self.controller.create_deposit(metadata)
         deposit_id = swh_deposit.get("deposit_id")
         if not deposit_id:
             raise DepositNotCreated("Deposit id not returned by SWH.")
 
-        deposit = self.record_cls.create(record.id)
         deposit.id = str(deposit_id)
         self.update_status(deposit, SWHDepositStatus.CREATED, uow=uow)
 
@@ -93,7 +107,10 @@ class SWHService(object):
 
     def read(self, id_) -> SWHDepositResult:
         """Read a deposit given its id."""
-        deposit = self.record_cls.get(id_)
+        try:
+            deposit = self.record_cls.get(id_)
+        except NoResultFound:
+            raise DepositNotFound(f"Deposit {id_} not found.")
         return self.result_item(deposit)
 
     @unit_of_work()
