@@ -8,6 +8,12 @@
 Changes
 =======
 
+Version v0.10.3 (released 2024-11-19)
+
+- service: refactor 'origin' calculation
+    * move origin calculation to API and service
+    * fix 'deposit' variable reference before assign
+
 Version 0.10.2 (released 2024-10-18)
 
 - tasks: remove logging for invalid records
