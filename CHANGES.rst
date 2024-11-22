@@ -8,6 +8,10 @@
 Changes
 =======
 
+Version 0.11.0 (released 2024-11-22)
+
+- record: added record SWH systemfield
+
 Version v0.10.3 (released 2024-11-19)
 
 - service: refactor 'origin' calculation
