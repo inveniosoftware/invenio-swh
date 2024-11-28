@@ -6,7 +6,10 @@
 # it under the terms of the MIT License; see LICENSE file for more details.
 """Invenio Software Heritage service."""
 
+from zipfile import Path, is_zipfile
+
 from flask import current_app
+from invenio_rdm_records.proxies import current_rdm_records_service as record_service
 from invenio_records_resources.services.uow import RecordCommitOp, unit_of_work
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -127,8 +130,34 @@ class SWHService(object):
         # Handle swhid created
         swhid = res.get("deposit_swhid")
         if swhid and not deposit.swhid:
+            try:
+                record = record_service.record_cls.get_record(str(deposit.record_id))
+                frecord = next(iter(record.files.entries.values()))
+                root_dir = self._peek_zip_root(frecord)
+                if root_dir:
+                    swhid = (
+                        swhid.replace("path=/", f"path={root_dir}")
+                        if "path=/" in swhid
+                        else f"{swhid};path={root_dir}"
+                    )
+            except Exception:
+                # If the `path` cannot be determined, or the file has multiple files in its root, the swhid points to the root of the deposit
+                pass
             self.update_swhid(deposit.id, swhid, uow=uow)
         return self.result_item(deposit)
+
+    def _peek_zip_root(self, file):
+        """Peeks the root of the zip file and returns the directory name."""
+        path = None
+        try:
+            with file.get_stream(mode="rb") as fp:
+                if is_zipfile(fp):
+                    dirs_list = list(Path(fp).iterdir())
+                    if len(dirs_list) == 1 and dirs_list[0].is_dir():
+                        path = dirs_list[0].name
+        except Exception:
+            pass
+        return path
 
     @unit_of_work()
     def complete(self, id_: int, uow=None):
