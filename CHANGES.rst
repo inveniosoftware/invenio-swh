@@ -8,6 +8,10 @@
 Changes
 =======
 
+Version v0.12.0 (released 2024-12-13)
+
+- swhid: add path with root directory
+
 Version 0.11.0 (released 2024-11-22)
 
 - record: added record SWH systemfield
