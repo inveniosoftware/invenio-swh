@@ -8,6 +8,10 @@
 Changes
 =======
 
+Version v0.13.0 (released 2024-12-27)
+
+- Bump dependencies to support Flask v3 and SQLAlchemy v2.
+
 Version v0.12.0 (released 2024-12-13)
 
 - swhid: add path with root directory
