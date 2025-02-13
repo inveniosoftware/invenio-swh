@@ -8,6 +8,10 @@
 Changes
 =======
 
+Version v0.13.1 (released 2025-02-13)
+
+- Bump invenio-rdm-records to stable release.
+
 Version v0.13.0 (released 2024-12-27)
 
 - Bump dependencies to support Flask v3 and SQLAlchemy v2.

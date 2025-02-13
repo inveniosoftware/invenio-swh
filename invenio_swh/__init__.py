@@ -9,6 +9,6 @@
 
 from .ext import InvenioSWH
 
-__version__ = "0.13.0"
+__version__ = "0.13.1"
 
 __all__ = ("__version__", "InvenioSWH")
