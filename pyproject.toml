@@ -1,3 +1,119 @@
+# SPDX-FileCopyrightText: 2020-2024 CERN
+# SPDX-FileCopyrightText: 2020 CERN
+# SPDX-FileCopyrightText: 2020 Cottage Labs LLP.
+# SPDX-FileCopyrightText: 2026 TU Wien.
+# SPDX-License-Identifier: MIT
+
+[project]
+name = "invenio-swh"
+description = "Invenio module to integrate Software Heritage."
+readme = "README.rst"
+requires-python = ">= 3.9"
+license = "MIT"
+authors = [
+  { name = "\"CERN/Cottage Labs LLP.\"", email = "info@inveniosoftware.org" },
+]
+keywords = [
+  "data",
+  "invenio",
+  "model",
+  "swh",
+]
+classifiers = [
+  "Development Status :: 1 - Planning",
+  "Environment :: Web Environment",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+  "invenio-access>=2.0.0",
+  "invenio-db>=1.1.5",
+  "invenio-rdm-records>=17.0.1",
+  "invenio-records-resources>=5.0.0",
+  "marshmallow-utils>=0.8.1",
+  "sword2>=0.3.0",
+  "xmltodict",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/inveniosoftware/invenio-swh"
+
+[project.entry-points."invenio_base.api_apps"]
+invenio_swh = "invenio_swh:InvenioSWH"
+
+[project.entry-points."invenio_base.apps"]
+invenio_swh = "invenio_swh:InvenioSWH"
+
+[project.entry-points."invenio_celery.tasks"]
+invenio_swh = "invenio_swh.tasks"
+
+[project.entry-points."invenio_db.alembic"]
+invenio_swh = "invenio_swh:alembic"
+
+[project.entry-points."invenio_db.models"]
+invenio_swh = "invenio_swh.models"
+
+[project.optional-dependencies]
+docs = [
+  "sphinx>=4.5",
+]
+elasticsearch7 = [
+  "invenio-search[elasticsearch7]>=3.0.0,<4.0.0",
+]
+opensearch1 = [
+  "invenio-search[opensearch1]>=3.0.0,<4.0.0",
+]
+opensearch2 = [
+  "invenio-search[opensearch2]>=3.0.0,<4.0.0",
+]
+tests = [
+  "invenio-app>=2.0.0,<3.0.0",
+  "invenio-db[postgresql]>=2.0.0,<3.0.0",
+  "pytest-black-ng>=0.4.0",
+  "pytest-invenio>=3.0.0,<4.0.0",
+  "sphinx>=4.5",
+  "xmldiff",
+]
+
 [build-system]
-requires = ["setuptools", "wheel", "babel>2.8"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "invenio_swh/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/invenio_swh",
+]
+
+[tool.isort]
+profile = "black"
+
+[tool.pydocstyle]
+add_ignore = "D401,D403"
+
+[tool.pytest.ini_options]
+addopts = "--black --isort --pydocstyle --ignore=docs --cov=invenio_swh --cov-report=term-missing"
+testpaths = "tests invenio_swh"
+live_server_scope = "module"
+
+# UV needs to be told explicitly which extras are conflicting:
+# https://docs.astral.sh/uv/concepts/projects/config/#conflicting-dependencies
+[tool.uv]
+conflicts = [
+  [
+    { extra = "opensearch1" },
+    { extra = "opensearch2" },
+    { extra = "elasticsearch7" },
+  ]
+]
